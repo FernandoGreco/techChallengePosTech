@@ -18,6 +18,34 @@
   "dst": [
     {
       "type": "domainStory:activity",
+      "name": "consulta",
+      "id": "connection_0713",
+      "pickedColor": "black",
+      "number": null,
+      "waypoints": [
+        {
+          "original": {
+            "x": 741,
+            "y": 244
+          },
+          "x": 741,
+          "y": 206
+        },
+        {
+          "original": {
+            "x": 740,
+            "y": 137
+          },
+          "x": 740,
+          "y": 153
+        }
+      ],
+      "source": "shape_0045",
+      "target": "shape_9215",
+      "multipleNumberAllowed": false
+    },
+    {
+      "type": "domainStory:activity",
       "name": "executa",
       "id": "connection_5388",
       "pickedColor": "black",
@@ -25,19 +53,19 @@
       "waypoints": [
         {
           "original": {
-            "x": -78,
-            "y": 139
+            "x": 193,
+            "y": 244
           },
-          "x": -35,
-          "y": 139
+          "x": 236,
+          "y": 244
         },
         {
           "original": {
-            "x": 74,
-            "y": 139
+            "x": 345,
+            "y": 244
           },
-          "x": 69,
-          "y": 139
+          "x": 340,
+          "y": 244
         }
       ],
       "source": "shape_6461",
@@ -53,19 +81,19 @@
       "waypoints": [
         {
           "original": {
-            "x": 293,
-            "y": 139
+            "x": 564,
+            "y": 244
           },
-          "x": 336,
-          "y": 139
+          "x": 607,
+          "y": 244
         },
         {
           "original": {
-            "x": 470,
-            "y": 139
+            "x": 741,
+            "y": 244
           },
-          "x": 432,
-          "y": 139
+          "x": 703,
+          "y": 244
         }
       ],
       "source": "shape_5163",
@@ -81,19 +109,19 @@
       "waypoints": [
         {
           "original": {
-            "x": 214,
-            "y": 13
+            "x": 485,
+            "y": 118
           },
-          "x": 250,
-          "y": 29
+          "x": 521,
+          "y": 134
         },
         {
           "original": {
-            "x": 440,
-            "y": 113
+            "x": 711,
+            "y": 218
           },
-          "x": 432,
-          "y": 109
+          "x": 703,
+          "y": 214
         }
       ],
       "source": "shape_5375",
@@ -109,19 +137,19 @@
       "waypoints": [
         {
           "original": {
-            "x": 293,
-            "y": 139
+            "x": 564,
+            "y": 244
           },
-          "x": 255,
-          "y": 139
+          "x": 526,
+          "y": 244
         },
         {
           "original": {
-            "x": 130,
-            "y": 141
+            "x": 401,
+            "y": 246
           },
-          "x": 151,
-          "y": 141
+          "x": 422,
+          "y": 246
         }
       ],
       "source": "shape_5163",
@@ -137,19 +165,19 @@
       "waypoints": [
         {
           "original": {
-            "x": 214,
-            "y": 13
+            "x": 485,
+            "y": 118
           },
-          "x": 176,
-          "y": 58
+          "x": 447,
+          "y": 163
         },
         {
           "original": {
-            "x": 123,
-            "y": 120
+            "x": 394,
+            "y": 225
           },
-          "x": 126,
-          "y": 116
+          "x": 397,
+          "y": 221
         }
       ],
       "source": "shape_5375",
@@ -165,19 +193,19 @@
       "waypoints": [
         {
           "original": {
-            "x": 214,
-            "y": 13
+            "x": 485,
+            "y": 118
           },
-          "x": 176,
-          "y": 13
+          "x": 447,
+          "y": 118
         },
         {
           "original": {
-            "x": 19,
-            "y": 13
+            "x": 290,
+            "y": 118
           },
-          "x": 62,
-          "y": 13
+          "x": 333,
+          "y": 118
         }
       ],
       "source": "shape_5375",
@@ -188,46 +216,53 @@
       "type": "domainStory:workObjectDocument",
       "name": "orçamento",
       "id": "shape_0045",
-      "x": 432,
-      "y": 101
+      "x": 703,
+      "y": 206
     },
     {
       "type": "domainStory:workObjectDocument",
       "name": "ordem serviço",
       "id": "shape_0572",
-      "x": 69,
-      "y": 101
+      "x": 340,
+      "y": 206
     },
     {
       "type": "domainStory:actorPerson",
       "name": "atendente",
       "id": "shape_5163",
-      "x": 255,
-      "y": 101
+      "x": 526,
+      "y": 206
     },
     {
       "type": "domainStory:actorPerson",
       "name": "Cliente",
       "id": "shape_5375",
-      "x": 176,
-      "y": -25
+      "x": 447,
+      "y": 80
     },
     {
       "type": "domainStory:actorPerson",
       "name": "mecânico",
       "id": "shape_6461",
-      "x": -116,
-      "y": 101
+      "x": 155,
+      "y": 206
     },
     {
       "type": "domainStory:workObjectDocument",
       "name": "Cadastro",
       "id": "shape_7051",
-      "x": -19,
-      "y": -25
+      "x": 252,
+      "y": 80
     },
     {
-      "info": "Atores: Cliente, atendente e mecânico.\n\nObjetos do domínio: Cadastro, ordem de serviço e orçamento."
+      "type": "domainStory:workObjectDocument",
+      "name": "estoque",
+      "id": "shape_9215",
+      "x": 703,
+      "y": 68
+    },
+    {
+      "info": "Domionio, sub-dominio, atores, linguagem obliquoa e contextos delimitados\n\n#Domínio#\nManutenção\n\n### Subdomínios ###\nCadastro, ordem de serviço, estoque e orçamento.\n\n# Atores #\nCliente, atendente e mecânico.\n\n#Linguagem Obliqua#\nCliente Digita CPF: Processo em que o cliente informa os dados do CPF, para que seja feito o cadastro ou caso já tenha cadastro, carrega os dados do cliente.\n\nCliente gera ordem de serviço: Informa qual manutenção precisa ser feita no veículo, isso gera uma ordem de serviço.\n\nAtendente consulta ordem de serviço: Atendente consulta ordem de serviço que foi criada pelo cliente.\n\nAtendente gera orçamento: Orçamento gerado com base na consulta de estoque e valor mão de obra do serviço.\n\nMecânico executa ordem de serviço: Quando status de ordem de serviço alterado para aprovado, mecânico executa ordem de serviço.\n\n"
     },
     {
       "version": "3.1.0"
