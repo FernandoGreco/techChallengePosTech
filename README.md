@@ -82,7 +82,7 @@ git clone <url-do-repositorio>
 cd oficina-mecanica
 
 # Subir a aplicação com Docker Compose
-docker-compose up --build
+docker compose up --build
 
 # A aplicação estará disponível em:
 # API: http://localhost:3000
@@ -92,30 +92,28 @@ docker-compose up --build
 ## 6. Como Rodar Localmente (sem Docker)
 
 ### Pré-requisitos
-- Node.js 20+
+- Node.js 20+ LTS (22 LTS recomendado)
 - PostgreSQL 16+
 - npm
 
-```bash
-# Instalar dependências
-npm install
+### Inicialização no PowerShell
 
-# Configurar variáveis de ambiente
-cp .env.example .env
-# Editar .env com as credenciais do banco
+```powershell
+$env:DATABASE_URL="postgresql://postgres:postgres@localhost:5432/oficina_mecanica?schema=public"
+$env:JWT_SECRET="oficina-mecanica-jwt-secret-dev"
+$env:JWT_EXPIRES_IN="1d"
+$env:PORT="3000"
 
-# Gerar o Prisma Client
+npm ci
 npx prisma generate
-
-# Executar migrations
-npx prisma migrate dev
-
-# Executar seed
+npx prisma migrate dev --name init
 npx prisma db seed
-
-# Iniciar em modo de desenvolvimento
 npm run start:dev
 ```
+
+Observação: a aplicação lê as variáveis de ambiente do terminal atual. Se você abrir um novo PowerShell, defina os valores novamente antes de iniciar a API.
+
+Se o banco já tiver dados antigos e você quiser reiniciar do zero, crie um banco novo ou limpe o schema antes de rodar a migration e o seed.
 
 ## 7. Variáveis de Ambiente
 
@@ -130,7 +128,7 @@ npm run start:dev
 
 ```bash
 # Criar e aplicar migrations
-npm run prisma:migrate
+npx prisma migrate dev --name init
 
 # Apenas aplicar migrations existentes (produção)
 npx prisma migrate deploy
