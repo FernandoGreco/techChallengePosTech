@@ -34,4 +34,6 @@ async function bootstrap() {
   console.log(`Swagger disponível em http://localhost:${port}/api/docs`);
 }
 
-void bootstrap();
+if (require.main === module) {
+  void bootstrap();
+}

@@ -1,119 +1,97 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { PecasUseCase } from '../pecas.use-case';
-import { PECA_REPOSITORY } from '../../../domain/repositories/peca.repository.interface';
-import { BusinessException } from '../../../../../shared/exceptions';
-
-const mockRepository = {
-  create: jest.fn(),
-  findAll: jest.fn(),
-  findById: jest.fn(),
-  update: jest.fn(),
-  delete: jest.fn(),
-};
+import { EstoqueRules } from '../../../domain/rules/estoque.rules';
 
 describe('PecasUseCase', () => {
-  let useCase: PecasUseCase;
+  let mockRepo: any;
+  let sut: PecasUseCase;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        PecasUseCase,
-        { provide: PECA_REPOSITORY, useValue: mockRepository },
-      ],
-    }).compile();
-
-    useCase = module.get<PecasUseCase>(PecasUseCase);
-    jest.clearAllMocks();
-  });
-
-  describe('entradaEstoque', () => {
-    it('deve adicionar quantidade ao estoque', async () => {
-      mockRepository.findById.mockResolvedValue({
-        id: '1',
-        quantidadeEstoque: 10,
-        quantidadeReservada: 0,
-      });
-      mockRepository.update.mockResolvedValue({
-        id: '1',
-        quantidadeEstoque: 20,
-      });
-
-      await useCase.entradaEstoque('1', 10);
-      expect(mockRepository.update).toHaveBeenCalledWith('1', {
-        quantidadeEstoque: 20,
-      });
-    });
-  });
-
-  describe('reservar', () => {
-    it('deve reservar peça quando há estoque disponível', async () => {
-      mockRepository.findById.mockResolvedValue({
+  beforeEach(() => {
+    mockRepo = {
+      create: jest.fn().mockResolvedValue({}),
+      findAll: jest.fn().mockResolvedValue([]),
+      findById: jest.fn().mockResolvedValue({
         id: '1',
         quantidadeEstoque: 10,
         quantidadeReservada: 2,
-      });
-      mockRepository.update.mockResolvedValue({
-        id: '1',
-        quantidadeReservada: 4,
-      });
+      }),
+      update: jest.fn().mockResolvedValue({}),
+      delete: jest.fn().mockResolvedValue({}),
+    };
 
-      await useCase.reservar('1', 2);
-      expect(mockRepository.update).toHaveBeenCalledWith('1', {
-        quantidadeReservada: 4,
-      });
-    });
+    sut = new PecasUseCase(mockRepo);
 
-    it('deve rejeitar reserva quando estoque insuficiente', async () => {
-      mockRepository.findById.mockResolvedValue({
-        id: '1',
-        quantidadeEstoque: 10,
-        quantidadeReservada: 8,
-      });
-
-      await expect(useCase.reservar('1', 5)).rejects.toThrow(BusinessException);
-    });
+    jest.spyOn(EstoqueRules, 'validarDisponibilidade').mockImplementation(() => undefined as any);
+    jest.spyOn(EstoqueRules, 'validarBaixaEstoque').mockImplementation(() => undefined as any);
   });
 
-  describe('baixarEstoque', () => {
-    it('deve baixar estoque com sucesso', async () => {
-      mockRepository.findById.mockResolvedValue({
-        id: '1',
-        quantidadeEstoque: 10,
-        quantidadeReservada: 5,
-      });
-      mockRepository.update.mockResolvedValue({
-        id: '1',
-        quantidadeEstoque: 5,
-        quantidadeReservada: 0,
-      });
-
-      await useCase.baixarEstoque('1', 5);
-      expect(mockRepository.update).toHaveBeenCalledWith('1', {
-        quantidadeEstoque: 5,
-        quantidadeReservada: 0,
-      });
-    });
-
-    it('deve rejeitar baixa quando estoque insuficiente', async () => {
-      mockRepository.findById.mockResolvedValue({
-        id: '1',
-        quantidadeEstoque: 3,
-        quantidadeReservada: 0,
-      });
-
-      await expect(useCase.baixarEstoque('1', 5)).rejects.toThrow(
-        BusinessException,
-      );
-    });
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  describe('buscarPorId', () => {
-    it('deve lançar exceção para peça inexistente', async () => {
-      mockRepository.findById.mockResolvedValue(null);
-      await expect(useCase.buscarPorId('999')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
+  it('criar chama repository.create', async () => {
+    const dto = { nome: 'x' } as any;
+    await sut.criar(dto);
+    expect(mockRepo.create).toHaveBeenCalledWith(dto);
+  });
+
+  it('listarTodas chama repository.findAll', async () => {
+    await sut.listarTodas();
+    expect(mockRepo.findAll).toHaveBeenCalled();
+  });
+
+  it('buscarPorId retorna quando encontrado', async () => {
+    const res = await sut.buscarPorId('1');
+    expect(res).toBeDefined();
+    expect(mockRepo.findById).toHaveBeenCalledWith('1');
+  });
+
+  it('buscarPorId lança NotFoundException quando não encontrado', async () => {
+    mockRepo.findById.mockResolvedValueOnce(null);
+    await expect(sut.buscarPorId('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('atualizar chama update após buscar', async () => {
+    const dto = { nome: 'novo' } as any;
+    await sut.atualizar('1', dto);
+    expect(mockRepo.update).toHaveBeenCalledWith('1', dto);
+  });
+
+  it('remover chama delete após buscar', async () => {
+    await sut.remover('1');
+    expect(mockRepo.delete).toHaveBeenCalledWith('1');
+  });
+
+  it('entradaEstoque atualiza quantidadeEstoque', async () => {
+    mockRepo.findById.mockResolvedValueOnce({ id: '1', quantidadeEstoque: 5, quantidadeReservada: 0 });
+    await sut.entradaEstoque('1', 3);
+    expect(mockRepo.update).toHaveBeenCalledWith('1', { quantidadeEstoque: 8 });
+  });
+
+  it('reservar valida disponibilidade e atualiza quantidadeReservada', async () => {
+    mockRepo.findById.mockResolvedValueOnce({ id: '1', quantidadeEstoque: 10, quantidadeReservada: 1 });
+    await sut.reservar('1', 2);
+    expect(EstoqueRules.validarDisponibilidade).toHaveBeenCalledWith(10, 1, 2);
+    expect(mockRepo.update).toHaveBeenCalledWith('1', { quantidadeReservada: 3 });
+  });
+
+  it('reservar propaga erro quando validarDisponibilidade lança', async () => {
+    jest.spyOn(EstoqueRules, 'validarDisponibilidade').mockImplementation(() => { throw new Error('sem estoque'); });
+    mockRepo.findById.mockResolvedValueOnce({ id: '1', quantidadeEstoque: 0, quantidadeReservada: 0 });
+    await expect(sut.reservar('1', 1)).rejects.toThrow('sem estoque');
+  });
+
+  it('baixarEstoque reduz quantidadeReservada corretamente quando sobra', async () => {
+    mockRepo.findById.mockResolvedValueOnce({ id: '1', quantidadeEstoque: 20, quantidadeReservada: 5 });
+    await sut.baixarEstoque('1', 2);
+    expect(EstoqueRules.validarBaixaEstoque).toHaveBeenCalledWith(20, 2);
+    expect(mockRepo.update).toHaveBeenCalledWith('1', { quantidadeEstoque: 18, quantidadeReservada: 3 });
+  });
+
+  it('baixarEstoque zera quantidadeReservada quando queda negativa', async () => {
+    mockRepo.findById.mockResolvedValueOnce({ id: '1', quantidadeEstoque: 10, quantidadeReservada: 1 });
+    await sut.baixarEstoque('1', 5);
+    expect(mockRepo.update).toHaveBeenCalledWith('1', { quantidadeEstoque: 5, quantidadeReservada: 0 });
   });
 });
+

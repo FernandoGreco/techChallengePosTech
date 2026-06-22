@@ -16,6 +16,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
+    "test:cov:open": "npm run test:cov && start \"\" \"coverage/lcov-report/index.html\"",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:migrate": "npx prisma migrate dev",
@@ -86,9 +87,18 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.{ts,js}"
     ],
-    "coverageDirectory": "../coverage",
+    "coveragePathIgnorePatterns": [
+      "<rootDir>/dist/",
+      "<rootDir>/prisma/",
+      "<rootDir>/test/",
+      "<rootDir>/src/main.ts",
+      "<rootDir>/src/.*/index.ts",
+      "<rootDir>/src/.*/enums/",
+      "<rootDir>/src/.*/enums/.*"
+    ],
+    "coverageDirectory": "coverage",
     "testEnvironment": "node"
   }
 }
