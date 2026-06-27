@@ -3,5 +3,8 @@ dist
 coverage
 .env
 .env.docker
-/generated/prisma
 *.tsbuildinfo
+.git
+.gitignore
+README.md
+prisma/migrations

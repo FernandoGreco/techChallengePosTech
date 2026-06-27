@@ -13,6 +13,7 @@ describe('OrdensServicoController', () => {
     registrarDiagnostico: jest.fn(),
     gerarOrcamento: jest.fn(),
     aprovarOrcamento: jest.fn(),
+    recusarOrcamento: jest.fn(),
     iniciarExecucao: jest.fn(),
     finalizar: jest.fn(),
     entregar: jest.fn(),
@@ -86,6 +87,12 @@ describe('OrdensServicoController', () => {
     mockUseCase.aprovarOrcamento.mockResolvedValue({ success: true });
     await expect(controller.aprovarOrcamento('o1')).resolves.toEqual({ success: true });
     expect(mockUseCase.aprovarOrcamento).toHaveBeenCalledWith('o1');
+  });
+
+  it('recusarOrcamento chama useCase.recusarOrcamento', async () => {
+    mockUseCase.recusarOrcamento.mockResolvedValue({ success: true });
+    await expect(controller.recusarOrcamento('o1')).resolves.toEqual({ success: true });
+    expect(mockUseCase.recusarOrcamento).toHaveBeenCalledWith('o1');
   });
 
   it('iniciarExecucao chama useCase.iniciarExecucao', async () => {

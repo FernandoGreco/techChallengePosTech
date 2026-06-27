@@ -481,4 +481,37 @@ describe('OrdensServicoUseCase - outros casos', () => {
     const uc = new OrdensServicoUseCase(mockPrisma as any);
     await expect(uc.aprovarOrcamento('o3')).rejects.toThrow(BusinessException);
   });
+
+  it('recusarOrcamento recusa orçamento e retorna OS para EM_DIAGNOSTICO', async () => {
+    const os = { id: 'o5', status: StatusOS.AGUARDANDO_APROVACAO, orcamentos: [{ id: 'orc1', status: 'GERADO' }], pecas: [] } as any;
+    mockPrisma.ordemServico.findUnique
+      .mockResolvedValueOnce(os)
+      .mockResolvedValue({ ...os, status: StatusOS.EM_DIAGNOSTICO });
+    mockPrisma.$transaction.mockImplementation(async (fn: Function) => {
+      const tx = {
+        orcamento: { update: jest.fn() },
+        ordemServico: { update: jest.fn() },
+        historicoStatusOS: { create: jest.fn() },
+      };
+      await fn(tx as any);
+    });
+    const uc = new OrdensServicoUseCase(mockPrisma as any);
+    const result = await uc.recusarOrcamento('o5');
+    expect(mockPrisma.$transaction).toHaveBeenCalled();
+    expect(result.status).toBe(StatusOS.EM_DIAGNOSTICO);
+  });
+
+  it('recusarOrcamento lança BusinessException quando OS não está AGUARDANDO_APROVACAO', async () => {
+    const os = { id: 'o6', status: StatusOS.RECEBIDA, orcamentos: [] } as any;
+    mockPrisma.ordemServico.findUnique.mockResolvedValue(os);
+    const uc = new OrdensServicoUseCase(mockPrisma as any);
+    await expect(uc.recusarOrcamento('o6')).rejects.toThrow(BusinessException);
+  });
+
+  it('recusarOrcamento lança BusinessException quando não há orçamento GERADO', async () => {
+    const os = { id: 'o7', status: StatusOS.AGUARDANDO_APROVACAO, orcamentos: [] } as any;
+    mockPrisma.ordemServico.findUnique.mockResolvedValue(os);
+    const uc = new OrdensServicoUseCase(mockPrisma as any);
+    await expect(uc.recusarOrcamento('o7')).rejects.toThrow(BusinessException);
+  });
 });

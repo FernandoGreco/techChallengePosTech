@@ -76,10 +76,11 @@ async function main() {
     },
   ];
 
-  for (const s of servicos) {
-    await prisma.servico.create({ data: s });
-  }
-  console.log(`${servicos.length} serviços criados`);
+  const servicosCriados = await prisma.servico.createMany({
+    data: servicos,
+    skipDuplicates: true,
+  });
+  console.log(`${servicosCriados.count} serviços criados (duplicatas ignoradas)`);
 
   const pecas = [
     {
@@ -114,13 +115,16 @@ async function main() {
     },
   ];
 
-  for (const p of pecas) {
-    await prisma.peca.create({ data: p });
-  }
-  console.log(`${pecas.length} peças criadas`);
+  const pecasCriadas = await prisma.peca.createMany({
+    data: pecas,
+    skipDuplicates: true,
+  });
+  console.log(`${pecasCriadas.count} peças criadas (duplicatas ignoradas)`);
 
-  const cliente = await prisma.cliente.create({
-    data: {
+  const cliente = await prisma.cliente.upsert({
+    where: { documento: '12345678909' },
+    update: {},
+    create: {
       nome: 'João da Silva',
       documento: '12345678909',
       tipoDocumento: 'CPF',
@@ -128,10 +132,12 @@ async function main() {
       email: 'joao@email.com',
     },
   });
-  console.log('Cliente criado:', cliente.nome);
+  console.log('Cliente seed:', cliente.nome);
 
-  const veiculo = await prisma.veiculo.create({
-    data: {
+  const veiculo = await prisma.veiculo.upsert({
+    where: { placa: 'ABC1D23' },
+    update: {},
+    create: {
       placa: 'ABC1D23',
       marca: 'Toyota',
       modelo: 'Corolla',
@@ -139,7 +145,7 @@ async function main() {
       clienteId: cliente.id,
     },
   });
-  console.log('Veículo criado:', veiculo.placa);
+  console.log('Veículo seed:', veiculo.placa);
 
   console.log('Seed concluído com sucesso!');
 }

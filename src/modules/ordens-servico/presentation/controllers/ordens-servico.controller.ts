@@ -104,6 +104,14 @@ export class OrdensServicoController {
     return this.ordensServicoUseCase.aprovarOrcamento(id);
   }
 
+  @Public()
+  @Post(':id/recusar-orcamento')
+  @ApiOperation({ summary: 'Recusar orçamento da OS (rota pública) — OS retorna para diagnóstico' })
+  @ApiResponse({ status: 200, description: 'Orçamento recusado' })
+  async recusarOrcamento(@Param('id') id: string) {
+    return this.ordensServicoUseCase.recusarOrcamento(id);
+  }
+
   @ApiBearerAuth()
   @Post(':id/iniciar-execucao')
   @ApiOperation({ summary: 'Iniciar execução da OS' })

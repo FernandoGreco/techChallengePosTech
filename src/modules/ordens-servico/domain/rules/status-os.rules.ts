@@ -67,4 +67,12 @@ export class StatusOSRules {
       );
     }
   }
+
+  static validarRecusarOrcamento(statusAtual: StatusOS): void {
+    if (statusAtual !== StatusOS.AGUARDANDO_APROVACAO) {
+      throw new BusinessException(
+        'Só é possível recusar orçamento se a OS estiver AGUARDANDO_APROVACAO',
+      );
+    }
+  }
 }

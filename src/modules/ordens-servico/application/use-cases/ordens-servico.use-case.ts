@@ -428,6 +428,41 @@ export class OrdensServicoUseCase {
     return this.buscarPorId(id);
   }
 
+  async recusarOrcamento(id: string) {
+    const os = await this.buscarPorId(id);
+    StatusOSRules.validarRecusarOrcamento(os.status as StatusOS);
+
+    const orcamento = os.orcamentos.find((o) => o.status === 'GERADO');
+    if (!orcamento) {
+      throw new BusinessException(
+        'Nenhum orçamento GERADO encontrado para esta OS',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.orcamento.update({
+        where: { id: orcamento.id },
+        data: { status: 'RECUSADO' },
+      });
+
+      await tx.ordemServico.update({
+        where: { id },
+        data: { status: StatusOS.EM_DIAGNOSTICO },
+      });
+
+      await tx.historicoStatusOS.create({
+        data: {
+          ordemServicoId: id,
+          statusAnterior: StatusOS.AGUARDANDO_APROVACAO,
+          statusNovo: StatusOS.EM_DIAGNOSTICO,
+          observacao: 'Orçamento recusado pelo cliente — OS retornada para diagnóstico',
+        },
+      });
+    });
+
+    return this.buscarPorId(id);
+  }
+
   async entregar(id: string) {
     const os = await this.buscarPorId(id);
     StatusOSRules.validarEntrega(os.status as StatusOS);

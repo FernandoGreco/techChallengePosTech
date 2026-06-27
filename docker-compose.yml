@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:16-alpine
@@ -13,6 +11,8 @@ services:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - oficina-net
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
@@ -25,14 +25,20 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'
+    env_file:
+      - .env.docker
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/oficina_mecanica?schema=public
-      JWT_SECRET: oficina-mecanica-jwt-secret-dev
-      JWT_EXPIRES_IN: 1d
       PORT: '3000'
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - oficina-net
 
 volumes:
   pgdata:
+
+networks:
+  oficina-net:
+    driver: bridge
