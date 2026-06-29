@@ -34,7 +34,7 @@ export class OrdensServicoUseCase {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       const os = await tx.ordemServico.create({
         data: {
           clienteId: dto.clienteId,
@@ -90,8 +90,10 @@ export class OrdensServicoUseCase {
         }
       }
 
-      return this.buscarPorId(os.id);
+      return os;
     });
+
+    return this.buscarPorId(created.id);
   }
 
   async listarTodas() {

@@ -13,35 +13,24 @@ O sistema permite:
 - Autenticação JWT para rotas administrativas
 - Documentação completa via Swagger
 
-## 2. Justificativa do Banco de Dados
 
-**PostgreSQL 16** foi escolhido pelos seguintes motivos:
 
-| Critério | Justificativa |
-|---|---|
-| **Relacionamentos complexos** | O domínio possui múltiplas relações (Cliente → Veículo → OS → Serviços/Peças → Orçamento → Histórico), demandando integridade referencial garantida por FK e transações ACID |
-| **Transações ACID** | Operações como geração de orçamento, aprovação e baixa de estoque precisam ser atômicas; o PostgreSQL suporta transações robustas com rollback confiável |
-| **Maturidade e suporte** | Banco open-source amplamente adotado na indústria, com suporte de longo prazo (LTS) e ecossistema maduro de ferramentas |
-| **Integração com Prisma ORM** | Suporte nativo e de primeira classe no Prisma, simplificando migrations, seeding e geração de tipos TypeScript |
-| **Consultas analíticas** | O módulo de relatórios (tempo médio de execução) se beneficia das capacidades de agregação e filtragem eficiente do PostgreSQL |
-| **Escalabilidade vertical** | Para um MVP de oficina de médio porte, a escalabilidade vertical do PostgreSQL é mais que suficiente, com possibilidade de otimização via índices e particionamento futuramente |
-
-## 3. Tecnologias Utilizadas
+## 2. Tecnologias Utilizadas
 
 | Tecnologia | Versão | Uso |
 |---|---|---|
-| Node.js | 20+ | Runtime |
+| Node.js | 20.x | Runtime |
 | TypeScript | 5.x | Linguagem |
 | NestJS | 11.x | Framework |
 | PostgreSQL | 16 | Banco de dados |
 | Prisma ORM | 5.x | ORM |
-| JWT | - | Autenticação |
-| Swagger/OpenAPI | - | Documentação |
+| JWT (`@nestjs/jwt`) | 11.x | Autenticação |
+| Swagger (`@nestjs/swagger`) | 11.x | Documentação |
 | Jest | 30.x | Testes |
 | Docker | - | Containerização |
-| ESLint + Prettier | - | Qualidade de código |
+| ESLint (`eslint`) + Prettier | Qualidade de código |
 
-## 4. Arquitetura
+## 3. Arquitetura
 
 O projeto segue a arquitetura de **monolito modular** com conceitos de **Domain-Driven Design (DDD)** aplicados.
 
@@ -51,7 +40,7 @@ O projeto segue a arquitetura de **monolito modular** com conceitos de **Domain-
 - **Infrastructure**: Implementações de repositórios com Prisma
 - **Presentation**: Controllers REST
 
-## 5. Estrutura de Pastas
+## 4. Estrutura de Pastas
 
 ```
 src/
@@ -87,7 +76,7 @@ src/
 └── main.ts
 ```
 
-## 6. Como Rodar com Docker
+## 5. Como Rodar com Docker
 
 ```bash
 # Clonar o repositório
@@ -102,7 +91,7 @@ docker compose up --build
 # Swagger: http://localhost:3000/api/docs
 ```
 
-## 7. Como Rodar Localmente (sem Docker)
+## 6. Como Rodar Localmente (sem Docker)
 
 ### Pré-requisitos
 - Node.js 20+ LTS (22 LTS recomendado)
@@ -128,7 +117,7 @@ Observação: a aplicação lê as variáveis de ambiente do terminal atual. Se 
 
 Se o banco já tiver dados antigos e você quiser reiniciar do zero, crie um banco novo ou limpe o schema antes de rodar a migration e o seed.
 
-## 8. Variáveis de Ambiente
+## 7. Variáveis de Ambiente
 
 | Variável | Descrição | Valor padrão |
 |---|---|---|
@@ -137,7 +126,7 @@ Se o banco já tiver dados antigos e você quiser reiniciar do zero, crie um ban
 | `JWT_EXPIRES_IN` | Tempo de expiração do token | `1d` |
 | `PORT` | Porta da aplicação | `3000` |
 
-## 9. Como Executar Migrations
+## 8. Como Executar Migrations
 
 ```bash
 # Criar e aplicar migrations
@@ -147,7 +136,7 @@ npx prisma migrate dev --name init
 npx prisma migrate deploy
 ```
 
-## 10. Como Rodar Seed
+## 9. Como Rodar Seed
 
 ```bash
 npm run prisma:seed
@@ -162,7 +151,7 @@ O seed cria:
 - 1 cliente de exemplo
 - 1 veículo de exemplo
 
-## 11. Como Executar Testes
+## 10. Como Executar Testes
 
 ```bash
 # Testes unitários
@@ -175,7 +164,7 @@ npm run test:cov
 npm run test:e2e
 ```
 
-## 12. Como Acessar o Swagger
+## 11. Como Acessar o Swagger
 
 Após iniciar a aplicação, acesse:
 
@@ -189,7 +178,7 @@ Para autenticar no Swagger:
 3. Clique em "Authorize" no topo do Swagger
 4. Cole o token no campo "Value"
 
-## 13. Usuário Admin de Teste
+## 12. Usuário Admin de Teste
 
 | Campo | Valor |
 |---|---|
@@ -197,7 +186,7 @@ Para autenticar no Swagger:
 | Senha | `123456` |
 | Papel | `ADMIN` |
 
-## 14. Principais Endpoints
+## 13. Principais Endpoints
 
 
 ### Autenticação
@@ -269,14 +258,20 @@ Para autenticar no Swagger:
 |---|---|---|
 | GET | `/relatorios/tempo-medio-servicos` | Tempo médio de execução |
 
-## 15. Decisões Técnicas
+## 14. Decisões Técnicas
 
-### Por que PostgreSQL?
-- Banco relacional maduro e robusto, ideal para dados estruturados com relacionamentos complexos
-- Suporte nativo a UUID, JSON, arrays e tipos customizados
-- ACID compliance para transações financeiras (orçamentos, estoque)
-- Amplamente utilizado no mercado e com excelente suporte no ecossistema Node.js/Prisma
-- Gratuito e open-source
+### Justificativa do Banco de Dados
+
+**PostgreSQL 16** foi escolhido pelos seguintes motivos:
+
+| Critério | Justificativa |
+|---|---|
+| **Relacionamentos complexos** | O domínio possui múltiplas relações (Cliente → Veículo → OS → Serviços/Peças → Orçamento → Histórico), demandando integridade referencial garantida por FK e transações ACID |
+| **Transações ACID** | Operações como geração de orçamento, aprovação e baixa de estoque precisam ser atômicas; o PostgreSQL suporta transações robustas com rollback confiável |
+| **Maturidade e suporte** | Banco open-source amplamente adotado na indústria, com suporte de longo prazo (LTS) e ecossistema maduro de ferramentas |
+| **Integração com Prisma ORM** | Suporte nativo e de primeira classe no Prisma, simplificando migrations, seeding e geração de tipos TypeScript |
+| **Consultas analíticas** | O módulo de relatórios (tempo médio de execução) se beneficia das capacidades de agregação e filtragem eficiente do PostgreSQL |
+| **Escalabilidade vertical** | Para um MVP de oficina de médio porte, a escalabilidade vertical do PostgreSQL é mais que suficiente, com possibilidade de otimização via índices e particionamento futuramente |
 
 ### Monolito Modular
 O monolito modular foi escolhido por:
@@ -293,7 +288,7 @@ O monolito modular foi escolhido por:
 - **Repositório como abstração**: interfaces definem contratos, implementações usam Prisma
 - **Casos de uso**: orquestram o fluxo da aplicação sem misturar com a camada de apresentação
 
-## 16. Regras de Negócio Principais
+## 15. Regras de Negócio Principais
 
 ### Status da Ordem de Serviço (Máquina de Estados)
 ```
@@ -317,7 +312,7 @@ RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → EM_EXECUCAO → FINALIZ
 12. Rotas administrativas protegidas por JWT
 13. Rotas públicas: consulta de status, aprovação e recusa de orçamento
 
-## 17. Exemplos de Requests
+## 16. Exemplos de Requests
 
 ### Login
 ```bash
