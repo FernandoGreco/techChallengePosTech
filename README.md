@@ -117,7 +117,254 @@ Observação: a aplicação lê as variáveis de ambiente do terminal atual. Se 
 
 Se o banco já tiver dados antigos e você quiser reiniciar do zero, crie um banco novo ou limpe o schema antes de rodar a migration e o seed.
 
-## 7. Variáveis de Ambiente
+## 7. Kubernetes
+
+A aplicação pode ser executada em um cluster Kubernetes. Os manifestos necessários estão disponíveis no diretório `/k8s`.
+
+A solução utiliza Kubernetes para orquestração dos containers da API e do PostgreSQL, permitindo gerenciamento de réplicas, configuração centralizada, persistência de dados e escalabilidade horizontal automática.
+
+### Arquitetura Kubernetes
+
+A estrutura utilizada é:
+
+```text
+                    Kubernetes Cluster
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+              ▼                         ▼
+      oficina-api-service       postgres-service
+              │                         │
+              ▼                         ▼
+       API Deployment          PostgreSQL Deployment
+              │                         │
+       ┌──────┴──────┐                  ▼
+       ▼             ▼             PostgreSQL Pod
+    API Pod        API Pod               │
+       │             │                   ▼
+       └──────┬──────┘                  PVC
+              │
+              ▼
+             HPA
+       min: 2 / max: 6
+         CPU alvo: 70%
+```
+
+### Estrutura dos manifestos
+
+```text
+k8s/
+├── namespace.yaml
+├── configmap.yaml
+├── secret.yaml
+├── app-deployment.yaml
+├── app-service.yaml
+├── hpa.yaml
+└── postgres/
+    ├── postgres-deployment.yaml
+    ├── postgres-service.yaml
+    └── postgres-pvc.yaml
+```
+
+### Recursos utilizados
+
+A infraestrutura Kubernetes utiliza:
+
+- **Namespace**: isolamento dos recursos da aplicação através do namespace `oficina`;
+- **Deployment da API**: mantém as instâncias da API NestJS em execução;
+- **Service da API**: fornece acesso estável aos pods da aplicação;
+- **Deployment PostgreSQL**: executa o banco PostgreSQL dentro do cluster;
+- **Service PostgreSQL**: permite a comunicação interna entre API e banco;
+- **PersistentVolumeClaim (PVC)**: fornece persistência aos dados do PostgreSQL;
+- **ConfigMap**: armazena configurações não sensíveis da aplicação;
+- **Secret**: armazena configurações sensíveis utilizadas pela aplicação;
+- **Horizontal Pod Autoscaler (HPA)**: realiza escalabilidade automática dos pods da API.
+
+### Pré-requisitos
+
+Para execução local:
+
+- Docker Desktop;
+- Kubernetes habilitado no Docker Desktop;
+- `kubectl` configurado;
+- Metrics Server instalado no cluster.
+
+Verifique o cluster:
+
+```bash
+kubectl get nodes
+```
+
+### Deploy no Kubernetes
+
+Primeiro aplique o namespace:
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+```
+
+Depois aplique ConfigMap e Secret:
+
+```bash
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secret.yaml
+```
+
+Suba o PostgreSQL:
+
+```bash
+kubectl apply -f k8s/postgres/
+```
+
+Suba a aplicação:
+
+```bash
+kubectl apply -f k8s/app-deployment.yaml
+kubectl apply -f k8s/app-service.yaml
+```
+
+Por último, configure o autoscaling:
+
+```bash
+kubectl apply -f k8s/hpa.yaml
+```
+
+### Verificando os recursos
+
+Para verificar todos os recursos:
+
+```bash
+kubectl get all -n oficina
+```
+
+Pods:
+
+```bash
+kubectl get pods -n oficina
+```
+
+Deployments:
+
+```bash
+kubectl get deployments -n oficina
+```
+
+Services:
+
+```bash
+kubectl get services -n oficina
+```
+
+PersistentVolumeClaim:
+
+```bash
+kubectl get pvc -n oficina
+```
+
+ConfigMaps:
+
+```bash
+kubectl get configmaps -n oficina
+```
+
+HPA:
+
+```bash
+kubectl get hpa -n oficina
+```
+
+### Acessando a API
+
+Para acessar a aplicação localmente:
+
+```bash
+kubectl port-forward service/oficina-api-service 3000:3000 -n oficina
+```
+
+A API ficará disponível em:
+
+`http://localhost:3000`
+
+Swagger:
+
+`http://localhost:3000/api/docs`
+
+---
+
+### 📈 Horizontal Pod Autoscaler
+
+A API utiliza **Horizontal Pod Autoscaler (HPA)** para permitir escalabilidade automática conforme o consumo de CPU.
+
+Configuração atual:
+
+| Configuração | Valor |
+|---|---:|
+| Réplicas mínimas | 2 |
+| Réplicas máximas | 6 |
+| CPU alvo | 70% |
+
+O HPA monitora o consumo médio de CPU dos pods e ajusta automaticamente a quantidade de réplicas do Deployment `oficina-api`.
+
+Para acompanhar:
+
+```bash
+kubectl get hpa -n oficina -w
+```
+
+Em outro terminal:
+
+```bash
+kubectl get pods -n oficina -w
+```
+
+Durante os testes de carga realizados no ambiente local, a aplicação escalou automaticamente de **2 para 6 pods**, demonstrando o funcionamento do HPA.
+
+### Metrics Server
+
+O HPA depende da API de métricas do Kubernetes.
+
+Verifique se as métricas estão disponíveis:
+
+```bash
+kubectl top nodes
+kubectl top pods -n oficina
+```
+
+Caso o Metrics Server ainda não esteja instalado no ambiente local:
+
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+
+Em ambientes locais Docker Desktop/kind pode ser necessário permitir a comunicação do Metrics Server com o kubelet utilizando:
+
+```bash
+kubectl patch deployment metrics-server -n kube-system --type='json' -p='[
+  {
+    "op": "add",
+    "path": "/spec/template/spec/containers/0/args/-",
+    "value": "--kubelet-insecure-tls"
+  }
+]'
+```
+
+> O uso de `--kubelet-insecure-tls` é destinado somente ao ambiente local de desenvolvimento utilizado neste projeto e não é recomendado como configuração de produção.
+
+Após a configuração:
+
+```bash
+kubectl top pods -n oficina
+```
+
+### Removendo o ambiente Kubernetes
+
+Para remover todos os recursos do projeto:
+
+```bash
+kubectl delete namespace oficina
+```
+
+## 8. Variáveis de Ambiente
 
 | Variável | Descrição | Valor padrão |
 |---|---|---|
@@ -126,7 +373,7 @@ Se o banco já tiver dados antigos e você quiser reiniciar do zero, crie um ban
 | `JWT_EXPIRES_IN` | Tempo de expiração do token | `1d` |
 | `PORT` | Porta da aplicação | `3000` |
 
-## 8. Como Executar Migrations
+## 9. Como Executar Migrations
 
 ```bash
 # Criar e aplicar migrations
@@ -136,7 +383,7 @@ npx prisma migrate dev --name init
 npx prisma migrate deploy
 ```
 
-## 9. Como Rodar Seed
+## 10. Como Rodar Seed
 
 ```bash
 npm run prisma:seed
@@ -151,7 +398,7 @@ O seed cria:
 - 1 cliente de exemplo
 - 1 veículo de exemplo
 
-## 10. Como Executar Testes
+## 11. Como Executar Testes
 
 ```bash
 # Testes unitários
@@ -164,7 +411,7 @@ npm run test:cov
 npm run test:e2e
 ```
 
-## 11. Como Acessar o Swagger
+## 12. Como Acessar o Swagger
 
 Após iniciar a aplicação, acesse:
 
@@ -178,7 +425,7 @@ Para autenticar no Swagger:
 3. Clique em "Authorize" no topo do Swagger
 4. Cole o token no campo "Value"
 
-## 12. Usuário Admin de Teste
+## 13. Usuário Admin de Teste
 
 | Campo | Valor |
 |---|---|
@@ -186,7 +433,7 @@ Para autenticar no Swagger:
 | Senha | `123456` |
 | Papel | `ADMIN` |
 
-## 13. Principais Endpoints
+## 14. Principais Endpoints
 
 
 ### Autenticação
@@ -258,7 +505,7 @@ Para autenticar no Swagger:
 |---|---|---|
 | GET | `/relatorios/tempo-medio-servicos` | Tempo médio de execução |
 
-## 14. Decisões Técnicas
+## 15. Decisões Técnicas
 
 ### Justificativa do Banco de Dados
 
@@ -288,7 +535,7 @@ O monolito modular foi escolhido por:
 - **Repositório como abstração**: interfaces definem contratos, implementações usam Prisma
 - **Casos de uso**: orquestram o fluxo da aplicação sem misturar com a camada de apresentação
 
-## 15. Regras de Negócio Principais
+## 16. Regras de Negócio Principais
 
 ### Status da Ordem de Serviço (Máquina de Estados)
 ```
@@ -312,7 +559,7 @@ RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → EM_EXECUCAO → FINALIZ
 12. Rotas administrativas protegidas por JWT
 13. Rotas públicas: consulta de status, aprovação e recusa de orçamento
 
-## 16. Exemplos de Requests
+## 17. Exemplos de Requests
 
 ### Login
 ```bash
