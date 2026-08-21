@@ -38,14 +38,19 @@ describe('VeiculosController', () => {
 
   it('buscarPorClienteId chama veiculosUseCase.buscarPorClienteId com clienteId', async () => {
     mockUseCase.buscarPorClienteId.mockResolvedValue([{ id: 'v1' }]);
-    await expect(controller.buscarPorClienteId('c1')).resolves.toEqual([{ id: 'v1' }]);
+    await expect(controller.buscarPorClienteId('c1')).resolves.toEqual([
+      { id: 'v1' },
+    ]);
     expect(mockUseCase.buscarPorClienteId).toHaveBeenCalledWith('c1');
   });
 
   it('atualizar chama veiculosUseCase.atualizar com id e dto', async () => {
     const dto = { modelo: 'Novo' } as any;
     mockUseCase.atualizar.mockResolvedValue({ id: 'v1', ...dto });
-    await expect(controller.atualizar('v1', dto)).resolves.toEqual({ id: 'v1', ...dto });
+    await expect(controller.atualizar('v1', dto)).resolves.toEqual({
+      id: 'v1',
+      ...dto,
+    });
     expect(mockUseCase.atualizar).toHaveBeenCalledWith('v1', dto);
   });
 

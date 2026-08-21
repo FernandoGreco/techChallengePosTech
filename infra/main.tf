@@ -15,7 +15,7 @@ resource "aws_db_instance" "postgres_db" {
   max_allocated_storage  = 50
   engine                 = "postgres"
   engine_version         = "16"
-  instance_class         = "db.t3.micro" # Adequado para conta de estudante/free tier
+  instance_class         = "db.t3.micro"
   db_name                = "oficina_mecanica"
   username               = "postgres"
   password               = var.db_password
@@ -27,10 +27,46 @@ resource "aws_db_instance" "postgres_db" {
   }
 }
 
-# 3. Servidor/Instância para rodar a Aplicação / Kubernetes
+# 3. Security Group para liberar SSH, App e tráfego de saída
+resource "aws_security_group" "app_sg" {
+  name        = "oficina_app_sg"
+  description = "Liberar SSH e porta da aplicacao"
+
+  # Entrada: Liberar SSH (Porta 22) para acesso do EC2 Instance Connect
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Entrada: Liberar Porta 3000 (Sua Aplicação / Swagger)
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Saída: Liberar todo tráfego de saída (necessário para baixar o Docker, etc.)
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "OficinaSecurityGroup"
+  }
+}
+
+# 4. Servidor/Instância para rodar a Aplicação / Kubernetes
 resource "aws_instance" "app_server" {
-  ami           = "ami-0c7217cdde317cfec" # Ubuntu 22.04 LTS em us-east-1
-  instance_type = "t3.medium"            # Recomendado para rodar Docker/K8s
+  ami                         = "ami-0c7217cdde317cfec" # Ubuntu 22.04 em us-east-1
+  instance_type               = "t3.medium"
+  associate_public_ip_address = true
+  vpc_security_group_ids      = [aws_security_group.app_sg.id]
 
   tags = {
     Name = "OficinaMecanicaServer"

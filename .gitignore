@@ -5,6 +5,7 @@ coverage
 .env.docker
 /generated/prisma
 *.tsbuildinfo
+
 # Terraform
 .terraform/
 *.tfstate
