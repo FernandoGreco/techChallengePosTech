@@ -38,7 +38,10 @@ describe('ServicosController', () => {
   it('atualizar chama servicosUseCase.atualizar com id e dto', async () => {
     const dto = { nome: 'Serviço novo' } as any;
     mockUseCase.atualizar.mockResolvedValue({ id: 's1', ...dto });
-    await expect(controller.atualizar('s1', dto)).resolves.toEqual({ id: 's1', ...dto });
+    await expect(controller.atualizar('s1', dto)).resolves.toEqual({
+      id: 's1',
+      ...dto,
+    });
     expect(mockUseCase.atualizar).toHaveBeenCalledWith('s1', dto);
   });
 

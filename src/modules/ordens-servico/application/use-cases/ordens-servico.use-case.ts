@@ -457,7 +457,8 @@ export class OrdensServicoUseCase {
           ordemServicoId: id,
           statusAnterior: StatusOS.AGUARDANDO_APROVACAO,
           statusNovo: StatusOS.EM_DIAGNOSTICO,
-          observacao: 'Orçamento recusado pelo cliente — OS retornada para diagnóstico',
+          observacao:
+            'Orçamento recusado pelo cliente — OS retornada para diagnóstico',
         },
       });
     });

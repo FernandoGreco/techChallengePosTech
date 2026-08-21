@@ -106,7 +106,10 @@ export class OrdensServicoController {
 
   @Public()
   @Post(':id/recusar-orcamento')
-  @ApiOperation({ summary: 'Recusar orçamento da OS (rota pública) — OS retorna para diagnóstico' })
+  @ApiOperation({
+    summary:
+      'Recusar orçamento da OS (rota pública) — OS retorna para diagnóstico',
+  })
   @ApiResponse({ status: 200, description: 'Orçamento recusado' })
   async recusarOrcamento(@Param('id') id: string) {
     return this.ordensServicoUseCase.recusarOrcamento(id);

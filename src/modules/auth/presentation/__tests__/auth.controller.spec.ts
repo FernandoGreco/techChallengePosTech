@@ -2,7 +2,9 @@ import { AuthController } from '../controllers/auth.controller';
 
 describe('AuthController', () => {
   it('deve chamar LoginUseCase e retornar token', async () => {
-    const loginUseCase = { execute: jest.fn().mockResolvedValue({ accessToken: 'jwt-token' }) };
+    const loginUseCase = {
+      execute: jest.fn().mockResolvedValue({ accessToken: 'jwt-token' }),
+    };
     const controller = new AuthController(loginUseCase as any);
     const dto = { email: 'teste@exemplo.com', senha: 'senha123' };
 

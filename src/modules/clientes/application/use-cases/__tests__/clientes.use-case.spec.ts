@@ -14,14 +14,14 @@ describe('ClientesUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    useCase = new ClientesUseCase(repo as any);
+    useCase = new ClientesUseCase(repo);
   });
 
   it('criar lança ConflictException quando documento existe', async () => {
     repo.findByDocumento.mockResolvedValue({ id: 'c1' });
-    await expect(useCase.criar({ documento: '123' } as any)).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(
+      useCase.criar({ documento: '123' } as any),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('criar delega para repository quando não existe', async () => {
@@ -33,12 +33,16 @@ describe('ClientesUseCase', () => {
 
   it('buscarPorId lança NotFoundException se não existe', async () => {
     repo.findById.mockResolvedValue(null);
-    await expect(useCase.buscarPorId('c1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(useCase.buscarPorId('c1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('buscarPorDocumento lança NotFoundException se não existe', async () => {
     repo.findByDocumento.mockResolvedValue(null);
-    await expect(useCase.buscarPorDocumento('123')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(useCase.buscarPorDocumento('123')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('atualizar e remover chamam repository após verificar existência', async () => {
@@ -46,11 +50,10 @@ describe('ClientesUseCase', () => {
     repo.update.mockResolvedValue({ id: 'c1', nome: 'X' });
     repo.delete.mockResolvedValue(undefined);
 
-    const up = await useCase.atualizar('c1', { nome: 'X' } as any);
+    const up = await useCase.atualizar('c1', { nome: 'X' });
     expect(up).toEqual({ id: 'c1', nome: 'X' });
 
     await useCase.remover('c1');
     expect(repo.delete).toHaveBeenCalledWith('c1');
   });
 });
-
