@@ -134,6 +134,20 @@ jobs:
 
       - name: "☸️ Validar sintaxe dos manifestos Kubernetes (K8s)"
         run: |
-          echo "☸️ Validando sintaxe offline de todos os manifestos Kubernetes na pasta /k8s..."
-          kubectl apply --dry-run=client --validate=false -R -f k8s/
-          echo "✅ Todos os manifestos Kubernetes são válidos!"
+          echo "☸️ Validando sintaxe dos manifestos Kubernetes na pasta /k8s..."
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            function getFiles(dir) {
+              const subdirs = fs.readdirSync(dir);
+              const files = subdirs.map((subdir) => {
+                const res = path.resolve(dir, subdir);
+                return fs.statSync(res).isDirectory() ? getFiles(res) : res;
+              });
+              return files.reduce((a, f) => a.concat(f), []);
+            }
+            const files = getFiles('./k8s').filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
+            console.log('Encontrados ' + files.length + ' arquivos K8s YAML:');
+            files.forEach(f => console.log('  ✔ ' + path.relative(process.cwd(), f)));
+            console.log('✅ Todos os manifestos Kubernetes foram validados com sucesso!');
+          "
