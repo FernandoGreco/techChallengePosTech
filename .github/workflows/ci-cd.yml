@@ -119,11 +119,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Validate Kubernetes Manifests Syntax
-        run: |
-          kubectl apply --dry-run=client -f k8s/namespace.yaml
-          kubectl apply --dry-run=client -f k8s/configmap.yaml
-          kubectl apply --dry-run=client -f k8s/secret.yaml
-          kubectl apply --dry-run=client -f k8s/postgres/
-          kubectl apply --dry-run=client -f k8s/app-deployment.yaml
-          kubectl apply --dry-run=client -f k8s/app-service.yaml
-          kubectl apply --dry-run=client -f k8s/hpa.yaml
+        run: kubectl apply --dry-run=client -R -f k8s/
