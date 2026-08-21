@@ -599,3 +599,52 @@ curl -X POST http://localhost:3000/ordens-servico \
 ```bash
 curl http://localhost:3000/ordens-servico/<id>/status
 ```
+
+## 18. Provisionamento de Infraestrutura com Terraform (`/infra`)
+
+Os arquivos de infraestrutura como código (IaC) estão armazenados na pasta `/infra`.
+
+### Recursos Provisionados
+- **VPC**: Rede virtual isolada para a infraestrutura do projeto.
+- **Subnets**: Sub-redes públicas e privadas.
+- **Internet Gateway**: Roteamento de tráfego para acesso à internet.
+
+### Executando o Terraform
+
+```bash
+cd infra
+
+# Inicializar os provedores e módulos
+terraform init
+
+# Validar os arquivos de configuração
+terraform validate
+
+# Visualizar o plano de execução
+terraform plan
+
+# Aplicar e criar a infraestrutura na cloud
+terraform apply
+```
+
+## 19. Esteira de CI/CD (GitHub Actions)
+
+A pipeline de Integração e Entrega Contínua (CI/CD) foi configurada via GitHub Actions no arquivo `.github/workflows/ci-cd.yml`.
+
+### Fluxo da Esteira
+1. **Continuous Integration (CI)**:
+   - Disparado em todo `push` ou `Pull Request` para as branches `main` e `develop`.
+   - Sobe banco PostgreSQL em container de teste.
+   - Executa Linter (`npm run lint`), Testes Unitários (`npm run test`), Cobertura (`npm run test:cov`) e Testes E2E (`npm run test:e2e`).
+   - Valida a compilação TypeScript (`npm run build`) e o build da Imagem Docker.
+2. **Continuous Deployment (CD)**:
+   - Disparado no `push` para a branch `main`.
+   - Gera a imagem Docker otimizada e faz o push para o **GitHub Container Registry (GHCR)** com a tag `latest` e o SHA do commit.
+   - Valida a sintaxe dos manifestos Kubernetes (`/k8s`).
+
+## 20. Entregáveis da Fase 2
+
+- **Repositório Git**: [FernandoGreco/techChallengePosTech](https://github.com/FernandoGreco/techChallengePosTech)
+- **Documentação de APIs (Swagger)**: `http://localhost:3000/api/docs` (ou coleção exportada em `/test/collection.json`)
+- **Vídeo Demonstrativo da Fase 2**: [Link do Vídeo no YouTube/Vimeo](https://youtube.com) *(Substituir pelo link oficial de até 15 min)*
+
