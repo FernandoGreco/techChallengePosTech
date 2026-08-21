@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-function-type */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { OrdensServicoUseCase } from '../ordens-servico.use-case';
@@ -121,11 +119,18 @@ describe('OrdensServicoUseCase', () => {
 
     it('deve rejeitar quando um serviço do DTO não for encontrado', async () => {
       mockPrisma.cliente.findUnique.mockResolvedValue({ id: 'cli-1' });
-      mockPrisma.veiculo.findUnique.mockResolvedValue({ id: 'vei-1', clienteId: 'cli-1' });
+      mockPrisma.veiculo.findUnique.mockResolvedValue({
+        id: 'vei-1',
+        clienteId: 'cli-1',
+      });
 
       mockPrisma.$transaction.mockImplementation(async (fn: Function) => {
         const txMock = {
-          ordemServico: { create: jest.fn().mockResolvedValue({ id: 'os-1', status: StatusOS.RECEBIDA }) },
+          ordemServico: {
+            create: jest
+              .fn()
+              .mockResolvedValue({ id: 'os-1', status: StatusOS.RECEBIDA }),
+          },
           historicoStatusOS: { create: jest.fn() },
           servico: { findUnique: jest.fn().mockResolvedValue(null) },
           peca: { findUnique: jest.fn() },
@@ -137,17 +142,28 @@ describe('OrdensServicoUseCase', () => {
       });
 
       await expect(
-        useCase.criar({ clienteId: 'cli-1', veiculoId: 'vei-1', servicos: [{ servicoId: 's-not-found' }] } as any),
+        useCase.criar({
+          clienteId: 'cli-1',
+          veiculoId: 'vei-1',
+          servicos: [{ servicoId: 's-not-found' }],
+        } as any),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('deve rejeitar quando uma peça do DTO não for encontrada', async () => {
       mockPrisma.cliente.findUnique.mockResolvedValue({ id: 'cli-1' });
-      mockPrisma.veiculo.findUnique.mockResolvedValue({ id: 'vei-1', clienteId: 'cli-1' });
+      mockPrisma.veiculo.findUnique.mockResolvedValue({
+        id: 'vei-1',
+        clienteId: 'cli-1',
+      });
 
       mockPrisma.$transaction.mockImplementation(async (fn: Function) => {
         const txMock = {
-          ordemServico: { create: jest.fn().mockResolvedValue({ id: 'os-1', status: StatusOS.RECEBIDA }) },
+          ordemServico: {
+            create: jest
+              .fn()
+              .mockResolvedValue({ id: 'os-1', status: StatusOS.RECEBIDA }),
+          },
           historicoStatusOS: { create: jest.fn() },
           servico: { findUnique: jest.fn() },
           peca: { findUnique: jest.fn().mockResolvedValue(null) },
@@ -159,7 +175,11 @@ describe('OrdensServicoUseCase', () => {
       });
 
       await expect(
-        useCase.criar({ clienteId: 'cli-1', veiculoId: 'vei-1', pecas: [{ pecaId: 'p-not-found', quantidade: 1 }] } as any),
+        useCase.criar({
+          clienteId: 'cli-1',
+          veiculoId: 'vei-1',
+          pecas: [{ pecaId: 'p-not-found', quantidade: 1 }],
+        } as any),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -351,7 +371,6 @@ describe('OrdensServicoUseCase - outros casos', () => {
 
   it('listarTodas retorna lista de OS', async () => {
     mockPrisma.ordemServico.findMany.mockResolvedValue([baseOS]);
-    const module: any = { providers: [] };
     // instantiate use case directly using mockPrisma
     const uc = new OrdensServicoUseCase(mockPrisma as any);
     const result = await uc.listarTodas();
@@ -359,15 +378,31 @@ describe('OrdensServicoUseCase - outros casos', () => {
   });
 
   it('adicionarServico lança BusinessException quando status inválido', async () => {
-    mockPrisma.ordemServico.findUnique.mockResolvedValue({ id: 'o1', status: StatusOS.EM_EXECUCAO, servicos: [], pecas: [], orcamentos: [] });
+    mockPrisma.ordemServico.findUnique.mockResolvedValue({
+      id: 'o1',
+      status: StatusOS.EM_EXECUCAO,
+      servicos: [],
+      pecas: [],
+      orcamentos: [],
+    });
     const uc = new OrdensServicoUseCase(mockPrisma as any);
-    await expect(uc.adicionarServico('o1', { servicoId: 's1' } as any)).rejects.toThrow(BusinessException);
+    await expect(
+      uc.adicionarServico('o1', { servicoId: 's1' } as any),
+    ).rejects.toThrow(BusinessException);
   });
 
   it('adicionarPeca lança BusinessException quando status inválido', async () => {
-    mockPrisma.ordemServico.findUnique.mockResolvedValue({ id: 'o1', status: StatusOS.EM_EXECUCAO, servicos: [], pecas: [], orcamentos: [] });
+    mockPrisma.ordemServico.findUnique.mockResolvedValue({
+      id: 'o1',
+      status: StatusOS.EM_EXECUCAO,
+      servicos: [],
+      pecas: [],
+      orcamentos: [],
+    });
     const uc = new OrdensServicoUseCase(mockPrisma as any);
-    await expect(uc.adicionarPeca('o1', { pecaId: 'p1', quantidade: 1 } as any)).rejects.toThrow(BusinessException);
+    await expect(
+      uc.adicionarPeca('o1', { pecaId: 'p1', quantidade: 1 } as any),
+    ).rejects.toThrow(BusinessException);
   });
 
   it('registrarDiagnostico atualiza diagnóstico quando OS em diagnóstico', async () => {
@@ -378,31 +413,50 @@ describe('OrdensServicoUseCase - outros casos', () => {
       .mockResolvedValueOnce(osAfter); // after update
     mockPrisma.ordemServico.update.mockResolvedValue(osAfter);
     const uc = new OrdensServicoUseCase(mockPrisma as any);
-    const result = await uc.registrarDiagnostico('o1', { diagnostico: 'teste' } as any);
+    const result = await uc.registrarDiagnostico('o1', {
+      diagnostico: 'teste',
+    });
     expect(mockPrisma.ordemServico.update).toHaveBeenCalled();
     expect(result.diagnostico).toBe('teste');
   });
 
   it('registrarDiagnostico lança BusinessException quando status inválido', async () => {
-    mockPrisma.ordemServico.findUnique.mockResolvedValue({ id: 'o1', status: StatusOS.RECEBIDA });
+    mockPrisma.ordemServico.findUnique.mockResolvedValue({
+      id: 'o1',
+      status: StatusOS.RECEBIDA,
+    });
     const uc = new OrdensServicoUseCase(mockPrisma as any);
-    await expect(uc.registrarDiagnostico('o1', { diagnostico: 'x' } as any)).rejects.toThrow(BusinessException);
+    await expect(
+      uc.registrarDiagnostico('o1', { diagnostico: 'x' } as any),
+    ).rejects.toThrow(BusinessException);
   });
 
   it('aprovarOrcamento lança quando não há orcamento GERADO', async () => {
-    mockPrisma.ordemServico.findUnique.mockResolvedValue({ id: 'o1', status: StatusOS.AGUARDANDO_APROVACAO, orcamentos: [] });
+    mockPrisma.ordemServico.findUnique.mockResolvedValue({
+      id: 'o1',
+      status: StatusOS.AGUARDANDO_APROVACAO,
+      orcamentos: [],
+    });
     const uc = new OrdensServicoUseCase(mockPrisma as any);
     await expect(uc.aprovarOrcamento('o1')).rejects.toThrow(BusinessException);
   });
 
   it('aprovarOrcamento lança NotFoundException quando peça não encontrada', async () => {
-    const os = { id: 'o1', status: StatusOS.AGUARDANDO_APROVACAO, orcamentos: [{ id: 'orc1', status: 'GERADO' }], pecas: [{ pecaId: 'p1', quantidade: 1 }] } as any;
+    const os = {
+      id: 'o1',
+      status: StatusOS.AGUARDANDO_APROVACAO,
+      orcamentos: [{ id: 'orc1', status: 'GERADO' }],
+      pecas: [{ pecaId: 'p1', quantidade: 1 }],
+    } as any;
     mockPrisma.ordemServico.findUnique.mockResolvedValue(os);
     mockPrisma.$transaction.mockImplementation(async (fn: Function) => {
       const tx = {
         orcamento: { update: jest.fn() },
         ordemServico: { update: jest.fn() },
-        peca: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() },
+        peca: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          update: jest.fn(),
+        },
         historicoStatusOS: { create: jest.fn() },
       };
       await fn(tx as any);
@@ -412,13 +466,21 @@ describe('OrdensServicoUseCase - outros casos', () => {
   });
 
   it('iniciarExecucao lança quando não há orçamento aprovado', async () => {
-    mockPrisma.ordemServico.findUnique.mockResolvedValue({ id: 'o1', status: StatusOS.AGUARDANDO_APROVACAO, orcamentos: [] });
+    mockPrisma.ordemServico.findUnique.mockResolvedValue({
+      id: 'o1',
+      status: StatusOS.AGUARDANDO_APROVACAO,
+      orcamentos: [],
+    });
     const uc = new OrdensServicoUseCase(mockPrisma as any);
     await expect(uc.iniciarExecucao('o1')).rejects.toThrow(BusinessException);
   });
 
   it('iniciarExecucao inicia execução quando há orçamento aprovado', async () => {
-    const os = { id: 'o1', status: StatusOS.AGUARDANDO_APROVACAO, orcamentos: [{ id: 'orc1', status: 'APROVADO' }] } as any;
+    const os = {
+      id: 'o1',
+      status: StatusOS.AGUARDANDO_APROVACAO,
+      orcamentos: [{ id: 'orc1', status: 'APROVADO' }],
+    } as any;
     mockPrisma.ordemServico.findUnique.mockResolvedValue(os);
     mockPrisma.$transaction.mockResolvedValue(undefined);
     const uc = new OrdensServicoUseCase(mockPrisma as any);
@@ -427,11 +489,20 @@ describe('OrdensServicoUseCase - outros casos', () => {
   });
 
   it('finalizar aceita pecas inexistentes sem lançar', async () => {
-    const os = { id: 'o1', status: StatusOS.EM_EXECUCAO, pecas: [{ pecaId: 'p1', quantidade: 1 }] } as any;
-    mockPrisma.ordemServico.findUnique.mockResolvedValueOnce(os).mockResolvedValue({ ...os, status: StatusOS.FINALIZADA });
+    const os = {
+      id: 'o1',
+      status: StatusOS.EM_EXECUCAO,
+      pecas: [{ pecaId: 'p1', quantidade: 1 }],
+    } as any;
+    mockPrisma.ordemServico.findUnique
+      .mockResolvedValueOnce(os)
+      .mockResolvedValue({ ...os, status: StatusOS.FINALIZADA });
     mockPrisma.$transaction.mockImplementation(async (fn: Function) => {
       const tx = {
-        peca: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() },
+        peca: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          update: jest.fn(),
+        },
         ordemServico: { update: jest.fn() },
         historicoStatusOS: { create: jest.fn() },
       };
@@ -443,37 +514,93 @@ describe('OrdensServicoUseCase - outros casos', () => {
   });
 
   it('adicionarServico adiciona serviço com sucesso', async () => {
-    const osBefore = { id: 'o2', status: StatusOS.RECEBIDA, servicos: [], pecas: [], orcamentos: [] } as any;
-    const osAfter = { id: 'o2', servicos: [{ id: 'oss1', valor: 150 }], pecas: [], orcamentos: [] } as any;
-    mockPrisma.ordemServico.findUnique.mockResolvedValueOnce(osBefore).mockResolvedValueOnce(osAfter);
-    mockPrisma.servico.findUnique.mockResolvedValue({ id: 's1', precoBase: 150 });
+    const osBefore = {
+      id: 'o2',
+      status: StatusOS.RECEBIDA,
+      servicos: [],
+      pecas: [],
+      orcamentos: [],
+    } as any;
+    const osAfter = {
+      id: 'o2',
+      servicos: [{ id: 'oss1', valor: 150 }],
+      pecas: [],
+      orcamentos: [],
+    } as any;
+    mockPrisma.ordemServico.findUnique
+      .mockResolvedValueOnce(osBefore)
+      .mockResolvedValueOnce(osAfter);
+    mockPrisma.servico.findUnique.mockResolvedValue({
+      id: 's1',
+      precoBase: 150,
+    });
     mockPrisma.ordemServicoServico.create.mockResolvedValue({ id: 'oss1' });
     const uc = new OrdensServicoUseCase(mockPrisma as any);
-    const res = await uc.adicionarServico('o2', { servicoId: 's1' } as any);
-    expect(mockPrisma.ordemServicoServico.create).toHaveBeenCalledWith({ data: { ordemServicoId: 'o2', servicoId: 's1', valor: 150 } });
+    const res = await uc.adicionarServico('o2', { servicoId: 's1' });
+    expect(mockPrisma.ordemServicoServico.create).toHaveBeenCalledWith({
+      data: { ordemServicoId: 'o2', servicoId: 's1', valor: 150 },
+    });
     expect(res.servicos.length).toBeGreaterThan(0);
   });
 
   it('adicionarPeca adiciona peça com sucesso', async () => {
-    const osBefore = { id: 'o4', status: StatusOS.RECEBIDA, servicos: [], pecas: [], orcamentos: [] } as any;
-    const osAfter = { id: 'o4', servicos: [], pecas: [{ id: 'osp1', quantidade: 2, valorUnitario: 10 }], orcamentos: [] } as any;
-    mockPrisma.ordemServico.findUnique.mockResolvedValueOnce(osBefore).mockResolvedValueOnce(osAfter);
-    mockPrisma.peca.findUnique.mockResolvedValue({ id: 'p1', precoUnitario: 10 });
+    const osBefore = {
+      id: 'o4',
+      status: StatusOS.RECEBIDA,
+      servicos: [],
+      pecas: [],
+      orcamentos: [],
+    } as any;
+    const osAfter = {
+      id: 'o4',
+      servicos: [],
+      pecas: [{ id: 'osp1', quantidade: 2, valorUnitario: 10 }],
+      orcamentos: [],
+    } as any;
+    mockPrisma.ordemServico.findUnique
+      .mockResolvedValueOnce(osBefore)
+      .mockResolvedValueOnce(osAfter);
+    mockPrisma.peca.findUnique.mockResolvedValue({
+      id: 'p1',
+      precoUnitario: 10,
+    });
     mockPrisma.ordemServicoPeca.create.mockResolvedValue({ id: 'osp1' });
     const uc = new OrdensServicoUseCase(mockPrisma as any);
-    const res = await uc.adicionarPeca('o4', { pecaId: 'p1', quantidade: 2 } as any);
-    expect(mockPrisma.ordemServicoPeca.create).toHaveBeenCalledWith({ data: { ordemServicoId: 'o4', pecaId: 'p1', quantidade: 2, valorUnitario: 10 } });
+    const res = await uc.adicionarPeca('o4', {
+      pecaId: 'p1',
+      quantidade: 2,
+    });
+    expect(mockPrisma.ordemServicoPeca.create).toHaveBeenCalledWith({
+      data: {
+        ordemServicoId: 'o4',
+        pecaId: 'p1',
+        quantidade: 2,
+        valorUnitario: 10,
+      },
+    });
     expect(res.pecas.length).toBeGreaterThan(0);
   });
 
   it('aprovarOrcamento lança BusinessException quando estoque insuficiente', async () => {
-    const os = { id: 'o3', status: StatusOS.AGUARDANDO_APROVACAO, orcamentos: [{ id: 'orc1', status: 'GERADO' }], pecas: [{ pecaId: 'p1', quantidade: 5 }] } as any;
+    const os = {
+      id: 'o3',
+      status: StatusOS.AGUARDANDO_APROVACAO,
+      orcamentos: [{ id: 'orc1', status: 'GERADO' }],
+      pecas: [{ pecaId: 'p1', quantidade: 5 }],
+    } as any;
     mockPrisma.ordemServico.findUnique.mockResolvedValue(os);
     mockPrisma.$transaction.mockImplementation(async (fn: Function) => {
       const tx = {
         orcamento: { update: jest.fn() },
         ordemServico: { update: jest.fn() },
-        peca: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', quantidadeEstoque: 1, quantidadeReservada: 0 }), update: jest.fn() },
+        peca: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'p1',
+            quantidadeEstoque: 1,
+            quantidadeReservada: 0,
+          }),
+          update: jest.fn(),
+        },
         historicoStatusOS: { create: jest.fn() },
       };
       await fn(tx as any);
@@ -483,7 +610,12 @@ describe('OrdensServicoUseCase - outros casos', () => {
   });
 
   it('recusarOrcamento recusa orçamento e retorna OS para EM_DIAGNOSTICO', async () => {
-    const os = { id: 'o5', status: StatusOS.AGUARDANDO_APROVACAO, orcamentos: [{ id: 'orc1', status: 'GERADO' }], pecas: [] } as any;
+    const os = {
+      id: 'o5',
+      status: StatusOS.AGUARDANDO_APROVACAO,
+      orcamentos: [{ id: 'orc1', status: 'GERADO' }],
+      pecas: [],
+    } as any;
     mockPrisma.ordemServico.findUnique
       .mockResolvedValueOnce(os)
       .mockResolvedValue({ ...os, status: StatusOS.EM_DIAGNOSTICO });
@@ -509,7 +641,11 @@ describe('OrdensServicoUseCase - outros casos', () => {
   });
 
   it('recusarOrcamento lança BusinessException quando não há orçamento GERADO', async () => {
-    const os = { id: 'o7', status: StatusOS.AGUARDANDO_APROVACAO, orcamentos: [] } as any;
+    const os = {
+      id: 'o7',
+      status: StatusOS.AGUARDANDO_APROVACAO,
+      orcamentos: [],
+    } as any;
     mockPrisma.ordemServico.findUnique.mockResolvedValue(os);
     const uc = new OrdensServicoUseCase(mockPrisma as any);
     await expect(uc.recusarOrcamento('o7')).rejects.toThrow(BusinessException);

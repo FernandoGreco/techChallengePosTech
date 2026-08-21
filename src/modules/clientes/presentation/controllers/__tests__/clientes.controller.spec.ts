@@ -38,14 +38,19 @@ describe('ClientesController', () => {
 
   it('buscarPorDocumento chama clientesUseCase.buscarPorDocumento com documento', async () => {
     mockUseCase.buscarPorDocumento.mockResolvedValue({ id: '1' });
-    await expect(controller.buscarPorDocumento('123')).resolves.toEqual({ id: '1' });
+    await expect(controller.buscarPorDocumento('123')).resolves.toEqual({
+      id: '1',
+    });
     expect(mockUseCase.buscarPorDocumento).toHaveBeenCalledWith('123');
   });
 
   it('atualizar chama clientesUseCase.atualizar com id e dto', async () => {
     const dto = { nome: 'Novo' } as any;
     mockUseCase.atualizar.mockResolvedValue({ id: '1', ...dto });
-    await expect(controller.atualizar('1', dto)).resolves.toEqual({ id: '1', ...dto });
+    await expect(controller.atualizar('1', dto)).resolves.toEqual({
+      id: '1',
+      ...dto,
+    });
     expect(mockUseCase.atualizar).toHaveBeenCalledWith('1', dto);
   });
 

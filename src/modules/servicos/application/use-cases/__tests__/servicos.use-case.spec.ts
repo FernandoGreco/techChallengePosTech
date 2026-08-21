@@ -13,7 +13,7 @@ describe('ServicosUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    useCase = new ServicosUseCase(repo as any);
+    useCase = new ServicosUseCase(repo);
   });
 
   it('cria serviço', async () => {
@@ -45,7 +45,7 @@ describe('ServicosUseCase', () => {
   it('atualizar chama update após verificar existência', async () => {
     repo.findById.mockResolvedValue({ id: 's1' });
     repo.update.mockResolvedValue({ id: 's1', nome: 'Y' });
-    const res = await useCase.atualizar('s1', { nome: 'Y' } as any);
+    const res = await useCase.atualizar('s1', { nome: 'Y' });
     expect(repo.update).toHaveBeenCalledWith('s1', { nome: 'Y' });
     expect(res).toEqual({ id: 's1', nome: 'Y' });
   });
