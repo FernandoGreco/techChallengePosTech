@@ -151,3 +151,30 @@ jobs:
             files.forEach(f => console.log('  ✔ ' + path.relative(process.cwd(), f)));
             console.log('✅ Todos os manifestos Kubernetes foram validados com sucesso!');
           "
+
+      - name: "🌐 [CD 6/6] Realizar Deploy Automático na Instância EC2 da AWS"
+        if: ${{ secrets.EC2_HOST != '' && secrets.EC2_SSH_KEY != '' }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🌐 Conectado com sucesso na instância EC2 da AWS (IP: ${{ secrets.EC2_HOST }})..."
+            echo "🚀 Baixando a versão mais recente da Imagem Docker do GHCR..."
+            sudo docker pull ghcr.io/${{ github.repository }}:latest
+            echo "🔄 Parando container antigo (se existir)..."
+            sudo docker stop oficina-api || true
+            sudo docker rm oficina-api || true
+            echo "🚀 Subindo a nova versão da API na porta 3000..."
+            sudo docker run -d \
+              --name oficina-api \
+              --restart always \
+              -p 3000:3000 \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e PORT=3000 \
+              ghcr.io/${{ github.repository }}:latest
+            echo "✅ Deploy na AWS executado com sucesso!"
+            echo "📍 API disponível em: http://${{ secrets.EC2_HOST }}:3000/api/docs"
+
