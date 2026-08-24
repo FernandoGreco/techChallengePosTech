@@ -9,7 +9,31 @@ resource "aws_s3_bucket" "oficina_storage" {
   }
 }
 
-# 2. Banco de Dados PostgreSQL (RDS)
+# 2. Security Group para o RDS (PostgreSQL - Porta 5432)
+resource "aws_security_group" "rds_sg" {
+  name        = "oficina_rds_sg"
+  description = "Liberar porta 5432 para conexao ao PostgreSQL"
+
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Libera acesso na porta 5432
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "OficinaRDSSecurityGroup"
+  }
+}
+
+# 3. Banco de Dados PostgreSQL (RDS)
 resource "aws_db_instance" "postgres_db" {
   allocated_storage      = 20
   max_allocated_storage  = 50
@@ -21,18 +45,18 @@ resource "aws_db_instance" "postgres_db" {
   password               = var.db_password
   skip_final_snapshot    = true
   publicly_accessible    = true
+  vpc_security_group_ids = [aws_security_group.rds_sg.id] # ⬅️ Vincula o Security Group do RDS
 
   tags = {
     Name = "OficinaMecanicaRDS"
   }
 }
 
-# 3. Security Group para liberar SSH, App e tráfego de saída
+# 4. Security Group para a EC2 (SSH + Porta 3000)
 resource "aws_security_group" "app_sg" {
   name        = "oficina_app_sg"
   description = "Liberar SSH e porta da aplicacao"
 
-  # Entrada: Liberar SSH (Porta 22) para acesso do EC2 Instance Connect
   ingress {
     from_port   = 22
     to_port     = 22
@@ -40,7 +64,6 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Entrada: Liberar Porta 3000 (Sua Aplicação / Swagger)
   ingress {
     from_port   = 3000
     to_port     = 3000
@@ -48,7 +71,6 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Saída: Liberar todo tráfego de saída (necessário para baixar o Docker, etc.)
   egress {
     from_port   = 0
     to_port     = 0
@@ -61,9 +83,9 @@ resource "aws_security_group" "app_sg" {
   }
 }
 
-# 4. Servidor/Instância para rodar a Aplicação / Kubernetes
+# 5. Servidor/Instância EC2
 resource "aws_instance" "app_server" {
-  ami                         = "ami-0c7217cdde317cfec" # Ubuntu 22.04 em us-east-1
+  ami                         = "ami-0c7217cdde317cfec"
   instance_type               = "t3.medium"
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.app_sg.id]
