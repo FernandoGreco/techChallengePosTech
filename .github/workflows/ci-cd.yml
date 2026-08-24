@@ -152,11 +152,11 @@ jobs:
             console.log('✅ Todos os manifestos Kubernetes foram validados com sucesso!');
           "
 
-      - name: "🌐 [CD 6/6] Realizar Deploy Automático na Instância EC2 da AWS"
+      - name: "🌐 [CD 6/6] Realizar Deploy Automático na Instância EC2 da AWS (Apenas Produção - main)"
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-        if: ${{ env.EC2_HOST != '' && env.EC2_SSH_KEY != '' }}
+        if: ${{ env.EC2_HOST != '' && env.EC2_SSH_KEY != '' && github.ref == 'refs/heads/main' }}
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
