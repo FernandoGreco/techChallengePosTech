@@ -19,14 +19,18 @@ describe('VeiculosUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    useCase = new VeiculosUseCase(repo, prisma as any);
+    useCase = new VeiculosUseCase(repo, prisma);
   });
 
   describe('criar', () => {
     it('lança NotFoundException quando cliente não existe', async () => {
       prisma.cliente.findUnique.mockResolvedValue(null);
       await expect(
-        useCase.criar({ clienteId: 'c1', placa: 'abc1234', modelo: 'X' } as any),
+        useCase.criar({
+          clienteId: 'c1',
+          placa: 'abc1234',
+          modelo: 'X',
+        } as any),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
@@ -35,7 +39,11 @@ describe('VeiculosUseCase', () => {
       prisma.veiculo.findUnique.mockResolvedValue({ id: 'v1' });
 
       await expect(
-        useCase.criar({ clienteId: 'c1', placa: 'abc1234', modelo: 'X' } as any),
+        useCase.criar({
+          clienteId: 'c1',
+          placa: 'abc1234',
+          modelo: 'X',
+        } as any),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
@@ -88,7 +96,7 @@ describe('VeiculosUseCase', () => {
       repo.findById.mockResolvedValue({ id: 'v1' });
       repo.update.mockResolvedValue({ id: 'v1', placa: 'ABC1234' });
 
-      const result = await useCase.atualizar('v1', { placa: 'abc1234' } as any);
+      const result = await useCase.atualizar('v1', { placa: 'abc1234' });
       expect(repo.update).toHaveBeenCalledWith('v1', { placa: 'ABC1234' });
       expect(result).toEqual({ id: 'v1', placa: 'ABC1234' });
     });

@@ -44,8 +44,8 @@ export class RelatoriosController {
     }
 
     const detalhes = osFinalziadas.map((os) => {
-      const inicio = os.dataInicioExecucao!;
-      const fim = os.dataFinalizacao!;
+      const inicio = os.dataInicioExecucao;
+      const fim = os.dataFinalizacao;
       const diffMs = fim.getTime() - inicio.getTime();
       const diffMinutos = Math.round(diffMs / (1000 * 60));
       return {

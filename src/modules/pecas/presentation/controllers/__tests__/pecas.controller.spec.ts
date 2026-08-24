@@ -41,7 +41,10 @@ describe('PecasController', () => {
   it('atualizar chama pecasUseCase.atualizar com id e dto', async () => {
     const dto = { nome: 'Novo' } as any;
     mockUseCase.atualizar.mockResolvedValue({ id: 'p1', ...dto });
-    await expect(controller.atualizar('p1', dto)).resolves.toEqual({ id: 'p1', ...dto });
+    await expect(controller.atualizar('p1', dto)).resolves.toEqual({
+      id: 'p1',
+      ...dto,
+    });
     expect(mockUseCase.atualizar).toHaveBeenCalledWith('p1', dto);
   });
 
@@ -53,19 +56,25 @@ describe('PecasController', () => {
 
   it('entradaEstoque chama pecasUseCase.entradaEstoque com id e quantidade', async () => {
     mockUseCase.entradaEstoque.mockResolvedValue({ success: true });
-    await expect(controller.entradaEstoque('p1', { quantidade: 5 } as any)).resolves.toEqual({ success: true });
+    await expect(
+      controller.entradaEstoque('p1', { quantidade: 5 } as any),
+    ).resolves.toEqual({ success: true });
     expect(mockUseCase.entradaEstoque).toHaveBeenCalledWith('p1', 5);
   });
 
   it('reservar chama pecasUseCase.reservar com id e quantidade', async () => {
     mockUseCase.reservar.mockResolvedValue({ success: true });
-    await expect(controller.reservar('p1', { quantidade: 2 } as any)).resolves.toEqual({ success: true });
+    await expect(
+      controller.reservar('p1', { quantidade: 2 } as any),
+    ).resolves.toEqual({ success: true });
     expect(mockUseCase.reservar).toHaveBeenCalledWith('p1', 2);
   });
 
   it('baixarEstoque chama pecasUseCase.baixarEstoque com id e quantidade', async () => {
     mockUseCase.baixarEstoque.mockResolvedValue({ success: true });
-    await expect(controller.baixarEstoque('p1', { quantidade: 1 } as any)).resolves.toEqual({ success: true });
+    await expect(
+      controller.baixarEstoque('p1', { quantidade: 1 } as any),
+    ).resolves.toEqual({ success: true });
     expect(mockUseCase.baixarEstoque).toHaveBeenCalledWith('p1', 1);
   });
 });

@@ -5,7 +5,7 @@ describe('RelatoriosController', () => {
 
   it('retorna zeros quando não há OS finalizadas', async () => {
     mockPrisma.ordemServico.findMany.mockResolvedValue([]);
-    const controller = new RelatoriosController(mockPrisma as any);
+    const controller = new RelatoriosController(mockPrisma);
     const res = await controller.tempoMedioServicos();
     expect(res.totalOS).toBe(0);
     expect(res.tempoMedioMinutos).toBe(0);
@@ -17,11 +17,21 @@ describe('RelatoriosController', () => {
     const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000);
 
     mockPrisma.ordemServico.findMany.mockResolvedValue([
-      { id: '1', numero: 1, dataInicioExecucao: twentyMinutesAgo, dataFinalizacao: now },
-      { id: '2', numero: 2, dataInicioExecucao: tenMinutesAgo, dataFinalizacao: now },
+      {
+        id: '1',
+        numero: 1,
+        dataInicioExecucao: twentyMinutesAgo,
+        dataFinalizacao: now,
+      },
+      {
+        id: '2',
+        numero: 2,
+        dataInicioExecucao: tenMinutesAgo,
+        dataFinalizacao: now,
+      },
     ]);
 
-    const controller = new RelatoriosController(mockPrisma as any);
+    const controller = new RelatoriosController(mockPrisma);
     const res = await controller.tempoMedioServicos();
     expect(res.totalOS).toBe(2);
     expect(res.detalhes.length).toBe(2);
