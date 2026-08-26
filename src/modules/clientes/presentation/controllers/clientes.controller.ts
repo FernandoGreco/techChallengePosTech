@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -34,7 +35,17 @@ export class ClientesController {
   @Get()
   @ApiOperation({ summary: 'Listar todos os clientes' })
   @ApiResponse({ status: 200, description: 'Lista de clientes' })
-  async listarTodos() {
+  // async listarTodos() {
+  //   return this.clientesUseCase.listarTodos();
+  // }
+
+  async listarTodos(@Query('delay') delay?: string) {
+    if (delay !== undefined) {
+      // Se mandar apenas ?delay sem valor, assume 3000ms. Se passar ?delay=5000, usa 5000ms.
+      const ms = parseInt(delay, 10) || 3000;
+      await new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
     return this.clientesUseCase.listarTodos();
   }
 

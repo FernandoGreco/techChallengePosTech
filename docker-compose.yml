@@ -19,6 +19,16 @@ services:
       timeout: 5s
       retries: 5
 
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: oficina-jaeger
+    restart: unless-stopped
+    ports:
+      - '16686:16686' # UI do Jaeger (Acesso via Navegador)
+      - '4318:4318'   # Endpoint OTLP HTTP (Recebe os traces da API)
+    networks:
+      - oficina-net
+
   app:
     build: .
     container_name: oficina-app
@@ -30,9 +40,12 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/oficina_mecanica?schema=public
       PORT: '3000'
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://jaeger:4318/v1/traces'
     depends_on:
       db:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     networks:
       - oficina-net
 

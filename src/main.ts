@@ -1,3 +1,7 @@
+import { otelSDK } from './tracing';
+
+// Inicializa a coleta de dados de telemetria
+otelSDK.start();
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
