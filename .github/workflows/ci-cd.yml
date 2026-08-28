@@ -11,7 +11,7 @@ jobs:
   # 1. CONTINUOUS INTEGRATION (CI) - Integração Contínua
   # ────────────────────────────────────────────────────────────────────────────
   ci:
-    name: "1. Integração Contínua (CI) - Testes & Qualidade"
+    name: "🔍 Integração Contínua (CI) - Testes & Qualidade"
     runs-on: ubuntu-latest
 
     services:
@@ -88,7 +88,7 @@ jobs:
   # 2. CONTINUOUS DEPLOYMENT (CD) - Entrega Contínua
   # ────────────────────────────────────────────────────────────────────────────
   cd:
-    name: "2. Entrega Contínua (CD) - Publicação da Imagem & K8s"
+    name: "🚀 Entrega Contínua (CD) - Publicação da Imagem & K8s"
     needs: ci
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -152,33 +152,159 @@ jobs:
             console.log('✅ Todos os manifestos Kubernetes foram validados com sucesso!');
           "
 
-      - name: "🌐 [CD 6/6] Realizar Deploy Automático na Instância EC2 da AWS (Apenas Produção - main)"
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-        if: ${{ env.EC2_HOST != '' && env.EC2_SSH_KEY != '' && github.ref == 'refs/heads/main' }}
-        uses: appleboy/ssh-action@v1.0.3
+  # ────────────────────────────────────────────────────────────────────────────
+  # 3. INFRAESTRUTURA + DEPLOY (Apenas Produção - main)
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: "🏗️ Infraestrutura & Deploy AWS (Produção)"
+    needs: cd
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: us-east-1
+      TF_STATE_BUCKET: techchallenge-oficina-tfstate-2026
+
+    steps:
+      - name: "📂 [Deploy 1/8] Obter código-fonte do repositório"
+        uses: actions/checkout@v4
+
+      # ── Terraform: Provisionamento da Infraestrutura AWS ──
+      - name: "🔧 [Deploy 2/8] Instalar Terraform"
+        uses: hashicorp/setup-terraform@v3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            echo "🌐 Conectado com sucesso na instância EC2 da AWS..."
-            echo "🚀 Baixando a versão mais recente da Imagem Docker do GHCR..."
+          terraform_version: "1.9.0"
+          terraform_wrapper: false
+
+      - name: "🪣 [Deploy 3/8] Criar bucket S3 para armazenar o estado do Terraform"
+        run: |
+          echo "🪣 Verificando se o bucket de estado do Terraform existe..."
+          if ! aws s3api head-bucket --bucket "$TF_STATE_BUCKET" 2>/dev/null; then
+            echo "📦 Bucket não encontrado. Criando bucket: $TF_STATE_BUCKET..."
+            aws s3api create-bucket \
+              --bucket "$TF_STATE_BUCKET" \
+              --region "$AWS_REGION"
+            echo "✅ Bucket criado com sucesso!"
+          else
+            echo "✅ Bucket já existe. Reutilizando..."
+          fi
+
+      - name: "⚙️ [Deploy 4/8] Inicializar Terraform com backend remoto (S3)"
+        working-directory: infra
+        run: |
+          echo "⚙️ Inicializando Terraform com backend S3 para persistir o estado..."
+          terraform init \
+            -backend-config="bucket=$TF_STATE_BUCKET" \
+            -backend-config="key=prod/terraform.tfstate" \
+            -backend-config="region=$AWS_REGION"
+          echo "✅ Terraform inicializado com sucesso!"
+
+      - name: "🏗️ [Deploy 5/8] Provisionar infraestrutura na AWS (Terraform Apply)"
+        working-directory: infra
+        run: |
+          echo "🏗️ Provisionando recursos na AWS..."
+          echo "   📋 Recursos: EC2, RDS PostgreSQL, S3, Security Groups, Chave SSH"
+          terraform apply -auto-approve
+          echo ""
+          echo "✅ Infraestrutura provisionada com sucesso!"
+          echo "📍 IP do Servidor: $(terraform output -raw server_public_ip)"
+
+      - name: "📤 [Deploy 6/8] Capturar dados da infraestrutura criada"
+        id: tf
+        working-directory: infra
+        run: |
+          echo "📤 Capturando outputs do Terraform..."
+          echo "ec2_host=$(terraform output -raw server_public_ip)" >> $GITHUB_OUTPUT
+          terraform output -raw ssh_private_key > /tmp/ssh_key.pem
+          chmod 600 /tmp/ssh_key.pem
+          terraform output -raw database_url > /tmp/database_url.txt
+          echo "✅ Dados capturados!"
+          echo "📍 EC2 Host: $(terraform output -raw server_public_ip)"
+
+      - name: "⏳ [Deploy 7/8] Aguardar inicialização da instância EC2"
+        run: |
+          EC2_HOST="${{ steps.tf.outputs.ec2_host }}"
+          echo "⏳ Aguardando a instância EC2 ($EC2_HOST) ficar pronta..."
+          echo "   ⏱️ A máquina precisa inicializar e instalar o Docker (user_data)..."
+          
+          # Aguardar até 3 minutos pela porta SSH (22)
+          for i in $(seq 1 18); do
+            if nc -z -w5 "$EC2_HOST" 22 2>/dev/null; then
+              echo "✅ Porta SSH (22) aberta! Máquina está acessível."
+              break
+            fi
+            echo "   ⏳ Tentativa $i/18 - Aguardando SSH..."
+            sleep 10
+          done
+          
+          # Aguardar mais 30s para o Docker terminar de instalar via user_data
+          echo "   ⏳ Aguardando instalação do Docker na máquina (user_data)..."
+          sleep 30
+          echo "✅ Tempo de espera concluído!"
+
+      # ── Deploy: Conectar na EC2 e subir a aplicação ──
+      - name: "🚀 [Deploy 8/8] Realizar Deploy da aplicação na instância EC2 da AWS"
+        run: |
+          EC2_HOST="${{ steps.tf.outputs.ec2_host }}"
+          DATABASE_URL=$(cat /tmp/database_url.txt)
+          
+          echo "🚀 Conectando via SSH na instância EC2: $EC2_HOST..."
+          
+          ssh -o StrictHostKeyChecking=no -i /tmp/ssh_key.pem ubuntu@"$EC2_HOST" << 'DEPLOY_SCRIPT'
+            echo "🌐 Conectado com sucesso na instância EC2 da AWS!"
+            
+            echo "🐳 Verificando se o Docker está instalado..."
+            for i in $(seq 1 12); do
+              if command -v docker &> /dev/null; then
+                echo "✅ Docker encontrado!"
+                break
+              fi
+              echo "   ⏳ Docker ainda não instalado, aguardando... ($i/12)"
+              sleep 10
+            done
+            
+            echo "🔑 Autenticando no GitHub Container Registry (GHCR)..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            echo "🚀 Baixando a versão mais recente da Imagem Docker..."
             sudo docker pull ghcr.io/${{ github.repository }}:latest
+            
             echo "🔄 Parando container antigo (se existir)..."
-            sudo docker stop oficina-api || true
-            sudo docker rm oficina-api || true
+            sudo docker stop oficina-api 2>/dev/null || true
+            sudo docker rm oficina-api 2>/dev/null || true
+            
             echo "🚀 Subindo a nova versão da API na porta 3000..."
             sudo docker run -d \
               --name oficina-api \
               --restart always \
               -p 3000:3000 \
-              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e DATABASE_URL="DEPLOY_DB_URL" \
+              -e JWT_SECRET="fiap-tech-challenge-secret" \
+              -e JWT_EXPIRES_IN="1d" \
               -e PORT=3000 \
               ghcr.io/${{ github.repository }}:latest
-            echo "✅ Deploy na AWS executado com sucesso!"
-            echo "📍 API disponível em: http://${{ secrets.EC2_HOST }}:3000/api/docs"
-
-
+            
+            echo "✅ Container iniciado com sucesso!"
+            echo "📍 API disponível em: http://$(curl -s ifconfig.me):3000"
+            echo "📖 Swagger disponível em: http://$(curl -s ifconfig.me):3000/api/docs"
+          DEPLOY_SCRIPT
+          
+          # Substituir a DATABASE_URL real (fora do heredoc para segurança)
+          ssh -o StrictHostKeyChecking=no -i /tmp/ssh_key.pem ubuntu@"$EC2_HOST" \
+            "sudo docker stop oficina-api && sudo docker rm oficina-api && \
+             sudo docker run -d --name oficina-api --restart always -p 3000:3000 \
+             -e DATABASE_URL='${DATABASE_URL}' \
+             -e JWT_SECRET='fiap-tech-challenge-secret' \
+             -e JWT_EXPIRES_IN='1d' \
+             -e PORT=3000 \
+             ghcr.io/${{ github.repository }}:latest"
+          
+          echo ""
+          echo "🎉 ================================================="
+          echo "   DEPLOY CONCLUÍDO COM SUCESSO!"
+          echo "🎉 ================================================="
+          echo ""
+          echo "📍 URL da API:     http://$EC2_HOST:3000"
+          echo "📖 URL do Swagger: http://$EC2_HOST:3000/api/docs"
+          echo ""
