@@ -4,17 +4,17 @@ import { LoginUseCase } from '../login.use-case';
 
 describe('LoginUseCase', () => {
   let useCase: LoginUseCase;
-  const mockPrisma = { usuario: { findUnique: jest.fn() } };
+  const mockUsuarioRepository = { findByEmail: jest.fn() };
   const mockJwtService = { sign: jest.fn() };
 
   beforeEach(() => {
-    useCase = new LoginUseCase(mockPrisma as any, mockJwtService as any);
+    useCase = new LoginUseCase(mockUsuarioRepository as any, mockJwtService as any);
     jest.clearAllMocks();
   });
 
   it('deve retornar token quando credenciais são válidas', async () => {
     const senhaHash = await bcrypt.hash('senha123', 10);
-    mockPrisma.usuario.findUnique.mockResolvedValue({
+    mockUsuarioRepository.findByEmail.mockResolvedValue({
       id: 'user-1',
       email: 'admin@test.com',
       papel: 'ADMIN',
@@ -36,7 +36,7 @@ describe('LoginUseCase', () => {
   });
 
   it('deve rejeitar quando usuário não existe', async () => {
-    mockPrisma.usuario.findUnique.mockResolvedValue(null);
+    mockUsuarioRepository.findByEmail.mockResolvedValue(null);
 
     await expect(
       useCase.execute({ email: 'admin@test.com', senha: 'senha123' }),
@@ -45,7 +45,7 @@ describe('LoginUseCase', () => {
 
   it('deve rejeitar quando senha é inválida', async () => {
     const senhaHash = await bcrypt.hash('senha123', 10);
-    mockPrisma.usuario.findUnique.mockResolvedValue({
+    mockUsuarioRepository.findByEmail.mockResolvedValue({
       id: 'user-1',
       email: 'admin@test.com',
       papel: 'ADMIN',
