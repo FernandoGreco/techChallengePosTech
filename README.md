@@ -20,14 +20,14 @@ O sistema permite:
 | Tecnologia | Versão | Por que foi escolhida |
 |---|---|---|
 | **Node.js** | 20.x LTS | Runtime JavaScript maduro com suporte a I/O assíncrono não-bloqueante — ideal para APIs REST que realizam muitas operações de banco em paralelo (transactions, includes). A equipe já domina o ecossistema Node por trabalhar com Angular no frontend, reduzindo a curva de aprendizado e permitindo compartilhar padrões e ferramentas entre back e front |
-| **TypeScript** | 5.x | Tipagem estática elimina erros em tempo de desenvolvimento, é obrigatório no ecossistema NestJS e facilita o contrato entre camadas (domain ↔ application ↔ infra) sem casting em tempo de execução. Por ser a linguagem padrão do Angular, toda a equipe já tem fluência em TypeScript, acelerando o desenvolvimento e o code review |
+| **TypeScript** | 5.x | Tipagem estática elimina erros em tempo de desenvolvimento, é obrigatório no ecossistema NestJS e facilita o contrato entre camadas (domain ↔ application ↔ infra) sem casting em tempo de execução. Por ser a linguagem que toda a equipe já tem fluência, acelerando o desenvolvimento e o code review |
 | **NestJS** | 11.x | Framework opinativo com suporte nativo a injeção de dependência, módulos, guards e decorators — permite separar camadas de forma declarativa sem boilerplate. Alinhado com a arquitetura hexagonal/Clean Architecture pela facilidade de registrar implementações por token (`useClass`) |
 | **PostgreSQL** | 16 | Banco relacional com transações ACID, integridade referencial via FK e suporte a JSON — necessário para o domínio complexo com múltiplas relações (OS → Orçamentos → Histórico). Ver seção 14 para análise detalhada |
 | **Prisma ORM** | 5.x | Gera tipos TypeScript automaticamente a partir do schema, simplifica migrations e oferece query builder type-safe. Isolado na camada de infra — use cases dependem de interfaces, não do Prisma diretamente |
 | **JWT** (`@nestjs/jwt`) | 11.x | Stateless, sem necessidade de session store no servidor. Payload carrega `sub`, `email` e `papel`, eliminando roundtrip ao banco para autorização |
 | **bcryptjs** | 3.x | Hash de senhas com salt adaptativo (fator de custo configurável). Resistente a ataques de rainbow table e força bruta |
 | **Swagger** (`@nestjs/swagger`) | 11.x | Documentação gerada diretamente dos decorators NestJS, sempre sincronizada com o código. Reduz divergência entre código e spec |
-| **Jest** | 30.x | Framework de testes padrão do ecossistema NestJS, com suporte a mocks, spies e cobertura integrada. Permite testar use cases em isolamento sem subir banco. A equipe já utiliza Jest no frontend Angular (via Jest ou Karma/Jasmine com API similar), tornando a escrita de testes mais natural e produtiva |
+| **Jest** | 30.x | Framework de testes padrão do ecossistema NestJS, com suporte a mocks, spies e cobertura integrada. Permite testar use cases em isolamento sem subir banco. A equipe tem experiencia com Jest ou Karma/Jasmine, tornando a escrita de testes mais natural e produtiva |
 | **Docker / Docker Compose** | - | Garante ambiente reproduzível entre dev, CI e produção. `docker compose up` sobe API + PostgreSQL em um comando |
 | **ESLint + Prettier** | - | Lint e formatação automática garantem consistência de estilo e evitam debates de formatação em code review |
 
