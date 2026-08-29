@@ -168,44 +168,74 @@ npm run test:cov:open
 npm run test:e2e
 ```
 
-### Cobertura Atual (Fase 2 — branch refactor/os-use-cases)
+### Resultado da execução (`npm test`)
 
-| Métrica | Resultado |
-|---|---|
-| **Suites** | 35 passando / 35 total |
-| **Testes** | 227 passando / 227 total |
-| **Statements** | 87% (974/1118) |
-| **Functions** | 83% (185/222) |
-| **Lines** | 87% (857/988) |
-| **Branches** | 62% (145/234) |
+```
+Test Suites: 39 passed, 39 total
+Tests:       271 passed, 271 total
+Snapshots:   0 total
+Time:        ~15s
+```
 
-### O que está coberto
+### Cobertura (`npm run test:cov`)
 
-| Módulo | Tipo de teste | Cenários principais |
-|---|---|---|
-| `ordens-servico` — use cases | Unitário (mock de repository) | Criar OS com status RECEBIDA; iniciar diagnóstico; gerar, aprovar e recusar orçamento; estoque insuficiente bloqueia aprovação; finalizar com baixa de estoque; entregar; transições inválidas lançam exceção |
-| `ordens-servico` — repository | Unitário (mock Prisma) | Listagem operacional exclui FINALIZADA/ENTREGUE; ordenação por prioridade de status; mais antigas primeiro dentro do mesmo status |
-| `ordens-servico` — controller | Unitário | Cada endpoint delega ao use case correto com os parâmetros corretos |
-| `pecas` — rules | Unitário | Validação de disponibilidade de estoque; validação de baixa |
-| `pecas` — use case | Unitário (mock repository) | Criar, listar, reservar, baixar estoque |
-| `pecas` — repository | Unitário (mock Prisma) | CRUD + operações de estoque |
-| `clientes` — use case | Unitário (mock repository) | Criar, buscar por documento, conflito de documento duplicado |
-| `clientes` — repository | Unitário (mock Prisma) | CRUD com validações |
-| `veiculos` — use case | Unitário (mock repository) | Criar, buscar, validar pertencimento ao cliente |
-| `servicos` — use case | Unitário (mock repository) | CRUD de catálogo |
-| `auth` — LoginUseCase | Unitário (mock IUsuarioRepository) | Credenciais válidas retornam JWT; usuário não existe rejeita; senha errada rejeita |
-| `auth` — JwtStrategy / Guard | Unitário | Validação de payload; rota pública bypassa guard |
-| `shared` — validators | Unitário | CPF válido/inválido; CNPJ válido/inválido; Placa formato antigo/Mercosul |
-| `shared` — PrismaService | Unitário | Inicialização e desconexão |
+```
+=============================== Coverage summary ================================
+Statements   : 94.63%  ( 1058/1118 )
+Branches     : 82.47%  (  193/234  )
+Functions    : 95.49%  (  212/222  )
+Lines        : 94.53%  (  934/988  )
+=================================================================================
+```
+
+### O que está coberto por módulo
+
+| Módulo | Suítes | Testes | Cenários cobertos |
+|---|:---:|:---:|---|
+| `ordens-servico` use cases | 6 | 60+ | Criar OS (status RECEBIDA obrigatório); buscar por ID; consultar status; adicionar serviço/peça (status válido/inválido); iniciar diagnóstico; registrar diagnóstico; gerar orçamento (cálculo serviços + peças); aprovar (reserva de estoque, **estoque insuficiente bloqueia**); recusar (retorna para EM_DIAGNOSTICO); iniciar execução (orçamento APROVADO obrigatório); finalizar (baixa de estoque); entregar; todas as **transições inválidas de status lançam exceção** |
+| `ordens-servico` repository | 2 | 17 | `findOperacionais`: exclui FINALIZADA/ENTREGUE via WHERE Prisma; ordenação por prioridade de status; mais antigas primeiro no mesmo status. `criar`: valida cliente, veículo e pertencimento. `adicionarServico/Peca`: NotFoundException quando não existe. `transicionarStatus`: chama `$transaction`. `atualizarDiagnostico` |
+| `ordens-servico` mapper | 1 | 9 | `toDomain` com todas as relações (cliente, veículo, serviços, peças, orçamentos, histórico); relações `undefined` retornam arrays vazios; `toStatusConsulta` expõe apenas campos de status |
+| `ordens-servico` controller | 1 | 14 | Cada um dos 14 endpoints delega ao use case correto com os parâmetros exatos |
+| `ordens-servico` domain rules | 1 | 9 | Todas as transições válidas e inválidas da máquina de estados (`StatusOSRules`) |
+| `pecas` use case + repository + rules | 3 | 30+ | Criar, listar, reservar, baixar estoque; disponibilidade insuficiente lança exceção; baixa não gera saldo negativo |
+| `clientes` use case + repository | 2 | 15+ | CRUD; documento duplicado gera conflito; busca por CPF/CNPJ |
+| `veiculos` use case + repository | 2 | 15+ | CRUD; validar pertencimento do veículo ao cliente |
+| `servicos` use case + repository | 2 | 12+ | CRUD de catálogo de serviços |
+| `auth` LoginUseCase | 1 | 3 | Credenciais válidas retornam JWT; e-mail não encontrado rejeita; senha errada rejeita |
+| `auth` JwtStrategy + Guard | 2 | 5 | Validação de payload JWT; `@Public()` bypassa o guard; token inválido é rejeitado |
+| `auth` UsuarioPrismaRepository | 1 | 3 | `findByEmail` encontrado/não encontrado; `select` busca apenas campos necessários (sem expor dados extras) |
+| `shared` validators | 3 | 20+ | CPF válido/inválido (algoritmo completo); CNPJ válido/inválido; placa formato antigo e Mercosul |
+| `shared` PrismaService | 1 | 2 | Inicialização; desconexão em shutdown |
 
 ### Estratégia de testes
 
-Os testes unitários de use cases utilizam **mocks de repository** (sem banco real), garantindo que:
-- A lógica de negócio é validada em isolamento total
-- Os testes rodam em milissegundos
-- Erros de banco não poluem falhas de regra de negócio
+```
+Presentation  ──► Controller tests: verifica que cada rota delega ao use case correto
+Application   ──► Use case tests: usa MOCK de repository — zero banco, zero I/O
+Domain        ──► Rule tests: TypeScript puro, sem dependências externas
+Infrastructure──► Repository tests: usa MOCK do PrismaService — verifica queries geradas
+```
 
-A camada de infraestrutura (Prisma repositories) é testada com **mock do PrismaService**, verificando que as queries corretas são construídas sem precisar de banco ativo.
+**Por que mock de repository nos use cases?**
+- Testa a lógica de negócio em isolamento total — um teste que falha indica problema no domínio, não no banco
+- Execução em milissegundos (sem conexão real)
+- Cenários difíceis de reproduzir no banco (estoque exato no limite, transições inválidas) são triviais com mocks
+
+**Exemplo real — teste de aprovação com estoque insuficiente:**
+```typescript
+it('deve lançar BusinessException quando estoque insuficiente', async () => {
+  repository.findById.mockResolvedValue(makeOS(StatusOS.AGUARDANDO_APROVACAO, {
+    pecas: [{ pecaId: 'p1', quantidade: 10, peca: {
+      quantidadeEstoque: 5,
+      quantidadeReservada: 0,
+    }}],
+    orcamentos: [{ status: 'GERADO' }],
+  }));
+
+  await expect(useCase.execute('os1')).rejects.toThrow(BusinessException);
+  expect(repository.aprovarOrcamento).not.toHaveBeenCalled(); // nada foi persistido
+});
+```
 
 ## 11. Como Acessar o Swagger
 
