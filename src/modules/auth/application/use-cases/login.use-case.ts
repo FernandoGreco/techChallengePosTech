@@ -1,20 +1,22 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { PrismaService } from '../../../../shared/database';
+import {
+  IUsuarioRepository,
+  USUARIO_REPOSITORY,
+} from '../../domain/repositories/usuario.repository.interface';
 import { LoginDto } from '../dto/login.dto';
 
 @Injectable()
 export class LoginUseCase {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(USUARIO_REPOSITORY)
+    private readonly usuarioRepository: IUsuarioRepository,
     private readonly jwtService: JwtService,
   ) {}
 
   async execute(dto: LoginDto): Promise<{ accessToken: string }> {
-    const usuario = await this.prisma.usuario.findUnique({
-      where: { email: dto.email },
-    });
+    const usuario = await this.usuarioRepository.findByEmail(dto.email);
 
     if (!usuario) {
       throw new UnauthorizedException('Credenciais inválidas');
