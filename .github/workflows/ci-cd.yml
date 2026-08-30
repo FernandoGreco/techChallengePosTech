@@ -253,14 +253,16 @@ jobs:
             terraform import aws_instance.app_server "$EC2_ID" 2>/dev/null || echo "   (ja no estado)"
           fi
 
-          # Importar RDS se ja existir
+          # Importar RDS se ja existir (usar || true para suprimir exit code 254 quando nao existe)
           RDS_EXISTS=$(aws rds describe-db-instances \
             --db-instance-identifier "oficina-mecanica" \
             --query "DBInstances[0].DBInstanceIdentifier" \
-            --output text 2>/dev/null)
+            --output text 2>/dev/null || echo "NOT_FOUND")
           if [ "$RDS_EXISTS" = "oficina-mecanica" ]; then
             echo "🗄️ RDS ja existe - importando..."
             terraform import aws_db_instance.postgres_db "oficina-mecanica" 2>/dev/null || echo "   (ja no estado)"
+          else
+            echo "ℹ️ RDS nao existe ainda - sera criado pelo Terraform."
           fi
 
           echo "✅ Verificacao e importacao concluidas!"
