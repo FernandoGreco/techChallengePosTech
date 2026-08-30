@@ -38,7 +38,7 @@ describe('GerarOrcamentoUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new GerarOrcamentoUseCase(repository as any);
+    useCase = new GerarOrcamentoUseCase(repository as any, null);
   });
 
   it('deve gerar orçamento somando serviços e peças', async () => {
@@ -68,6 +68,37 @@ describe('GerarOrcamentoUseCase', () => {
     const os = makeOSBase(StatusOS.RECEBIDA);
     repository.findById.mockResolvedValue(os);
     await expect(useCase.execute('os1')).rejects.toThrow(BusinessException);
+  });
+
+  it('deve chamar serviço de notificação após gerar orçamento', async () => {
+    const os = makeOSBase(StatusOS.EM_DIAGNOSTICO, {
+      servicos: [{ valor: 200 }],
+      pecas: [],
+    });
+    const osAtualizado = { ...os, status: StatusOS.AGUARDANDO_APROVACAO };
+    repository.findById.mockResolvedValue(os);
+    repository.gerarOrcamento.mockResolvedValue(osAtualizado);
+
+    const mockNotificacao = { notificarOrcamentoPendente: jest.fn().mockResolvedValue(undefined) };
+    const useCaseComNotificacao = new GerarOrcamentoUseCase(
+      repository as any,
+      mockNotificacao as any,
+    );
+
+    await useCaseComNotificacao.execute('os1');
+
+    expect(mockNotificacao.notificarOrcamentoPendente).toHaveBeenCalledWith(osAtualizado, 200);
+  });
+
+  it('não deve falhar se serviço de notificação não estiver configurado', async () => {
+    const os = makeOSBase(StatusOS.EM_DIAGNOSTICO, {
+      servicos: [{ valor: 100 }],
+      pecas: [],
+    });
+    repository.findById.mockResolvedValue(os);
+    repository.gerarOrcamento.mockResolvedValue({ ...os, status: StatusOS.AGUARDANDO_APROVACAO });
+
+    await expect(useCase.execute('os1')).resolves.not.toThrow();
   });
 });
 

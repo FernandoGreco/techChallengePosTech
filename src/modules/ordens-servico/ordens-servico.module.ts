@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../shared/database';
 import { OrdensServicoController } from './presentation/controllers/ordens-servico.controller';
 import { ORDEM_SERVICO_REPOSITORY } from './domain/repositories/ordem-servico.repository.interface';
+import { NOTIFICACAO_ORCAMENTO_SERVICE } from './domain/services/notificacao-orcamento.service.interface';
 import { OrdemServicoPrismaRepository } from './infrastructure/repositories/ordem-servico-prisma.repository';
+import { EmailNotificacaoOrcamentoService } from './infrastructure/services/email-notificacao-orcamento.service';
 import { CriarOrdemServicoUseCase } from './application/use-cases/criar-ordem-servico.use-case';
 import { ListarOrdensServicoUseCase } from './application/use-cases/listar-ordens-servico.use-case';
 import { BuscarOrdemServicoPorIdUseCase } from './application/use-cases/buscar-ordem-servico-por-id.use-case';
@@ -40,6 +42,7 @@ const useCases = [
   controllers: [OrdensServicoController],
   providers: [
     { provide: ORDEM_SERVICO_REPOSITORY, useClass: OrdemServicoPrismaRepository },
+    { provide: NOTIFICACAO_ORCAMENTO_SERVICE, useClass: EmailNotificacaoOrcamentoService },
     ...useCases,
   ],
   exports: useCases,

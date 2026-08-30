@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, Optional, NotFoundException } from '@nestjs/common';
 import {
   IOrdemServicoRepository,
   ORDEM_SERVICO_REPOSITORY,
@@ -6,12 +6,19 @@ import {
 import { IOrdemServico } from '../../domain/entities/ordem-servico.entity';
 import { StatusOS } from '../../domain/enums/status-os.enum';
 import { StatusOSRules } from '../../domain/rules/status-os.rules';
+import {
+  INotificacaoOrcamentoService,
+  NOTIFICACAO_ORCAMENTO_SERVICE,
+} from '../../domain/services/notificacao-orcamento.service.interface';
 
 @Injectable()
 export class GerarOrcamentoUseCase {
   constructor(
     @Inject(ORDEM_SERVICO_REPOSITORY)
     private readonly repository: IOrdemServicoRepository,
+    @Optional()
+    @Inject(NOTIFICACAO_ORCAMENTO_SERVICE)
+    private readonly notificacao: INotificacaoOrcamentoService | null,
   ) {}
 
   async execute(id: string): Promise<IOrdemServico> {
@@ -29,11 +36,17 @@ export class GerarOrcamentoUseCase {
     );
     const valorTotal = valorServicos + valorPecas;
 
-    return this.repository.gerarOrcamento({
+    const resultado = await this.repository.gerarOrcamento({
       id,
       valorServicos,
       valorPecas,
       valorTotal,
     });
+
+    if (this.notificacao) {
+      await this.notificacao.notificarOrcamentoPendente(resultado, valorTotal);
+    }
+
+    return resultado;
   }
 }
