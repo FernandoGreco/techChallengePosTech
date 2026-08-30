@@ -1,10 +1,14 @@
-import { Injectable, Inject, Optional, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  Optional,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   IOrdemServicoRepository,
   ORDEM_SERVICO_REPOSITORY,
 } from '../../domain/repositories/ordem-servico.repository.interface';
 import { IOrdemServico } from '../../domain/entities/ordem-servico.entity';
-import { StatusOS } from '../../domain/enums/status-os.enum';
 import { StatusOSRules } from '../../domain/rules/status-os.rules';
 import {
   INotificacaoOrcamentoService,

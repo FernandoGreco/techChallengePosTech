@@ -28,7 +28,10 @@ const makePrismaOS = (overrides: Partial<any> = {}) => ({
 describe('OrdemServicoMapper', () => {
   describe('toDomain', () => {
     it('deve mapear campos escalares corretamente', () => {
-      const prisma = makePrismaOS({ status: StatusOS.EM_DIAGNOSTICO, valorTotal: 350.5 });
+      const prisma = makePrismaOS({
+        status: StatusOS.EM_DIAGNOSTICO,
+        valorTotal: 350.5,
+      });
 
       const domain = OrdemServicoMapper.toDomain(prisma);
 
@@ -57,8 +60,8 @@ describe('OrdemServicoMapper', () => {
       const domain = OrdemServicoMapper.toDomain(prisma);
 
       expect(domain.cliente).toBeDefined();
-      expect(domain.cliente!.nome).toBe('João');
-      expect(domain.cliente!.email).toBe('joao@test.com');
+      expect(domain.cliente.nome).toBe('João');
+      expect(domain.cliente.email).toBe('joao@test.com');
     });
 
     it('deve mapear veiculo quando presente', () => {
@@ -78,8 +81,8 @@ describe('OrdemServicoMapper', () => {
       const domain = OrdemServicoMapper.toDomain(prisma);
 
       expect(domain.veiculo).toBeDefined();
-      expect(domain.veiculo!.placa).toBe('ABC1234');
-      expect(domain.veiculo!.modelo).toBe('Corolla');
+      expect(domain.veiculo.placa).toBe('ABC1234');
+      expect(domain.veiculo.modelo).toBe('Corolla');
     });
 
     it('deve mapear servicos com relação aninhada', () => {
@@ -91,7 +94,16 @@ describe('OrdemServicoMapper', () => {
             valor: 150,
             ordemServicoId: 'os1',
             createdAt: new Date(),
-            servico: { id: 's1', nome: 'Troca de óleo', descricao: 'Desc', precoBase: 150, tempoMedioMinutos: 30, ativo: true, createdAt: new Date(), updatedAt: new Date() },
+            servico: {
+              id: 's1',
+              nome: 'Troca de óleo',
+              descricao: 'Desc',
+              precoBase: 150,
+              tempoMedioMinutos: 30,
+              ativo: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
           },
         ],
       });
@@ -100,7 +112,7 @@ describe('OrdemServicoMapper', () => {
 
       expect(domain.servicos).toHaveLength(1);
       expect(domain.servicos[0].valor).toBe(150);
-      expect(domain.servicos[0].servico!.nome).toBe('Troca de óleo');
+      expect(domain.servicos[0].servico.nome).toBe('Troca de óleo');
     });
 
     it('deve mapear pecas com relação aninhada', () => {
@@ -132,7 +144,7 @@ describe('OrdemServicoMapper', () => {
 
       expect(domain.pecas).toHaveLength(1);
       expect(domain.pecas[0].quantidade).toBe(2);
-      expect(domain.pecas[0].peca!.quantidadeEstoque).toBe(10);
+      expect(domain.pecas[0].peca.quantidadeEstoque).toBe(10);
     });
 
     it('deve mapear orcamentos', () => {
@@ -176,12 +188,16 @@ describe('OrdemServicoMapper', () => {
       const domain = OrdemServicoMapper.toDomain(prisma);
 
       expect(domain.historico).toHaveLength(1);
-      expect(domain.historico![0].statusNovo).toBe(StatusOS.RECEBIDA);
-      expect(domain.historico![0].observacao).toBe('OS criada');
+      expect(domain.historico[0].statusNovo).toBe(StatusOS.RECEBIDA);
+      expect(domain.historico[0].observacao).toBe('OS criada');
     });
 
     it('deve retornar arrays vazios quando relações são undefined', () => {
-      const prisma = makePrismaOS({ servicos: undefined, pecas: undefined, orcamentos: undefined });
+      const prisma = makePrismaOS({
+        servicos: undefined,
+        pecas: undefined,
+        orcamentos: undefined,
+      });
 
       const domain = OrdemServicoMapper.toDomain(prisma);
 

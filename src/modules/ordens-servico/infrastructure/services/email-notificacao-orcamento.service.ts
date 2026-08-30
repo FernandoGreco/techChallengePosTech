@@ -4,9 +4,7 @@ import { INotificacaoOrcamentoService } from '../../domain/services/notificacao-
 import { IOrdemServico } from '../../domain/entities/ordem-servico.entity';
 
 @Injectable()
-export class EmailNotificacaoOrcamentoService
-  implements INotificacaoOrcamentoService
-{
+export class EmailNotificacaoOrcamentoService implements INotificacaoOrcamentoService {
   private readonly logger = new Logger(EmailNotificacaoOrcamentoService.name);
   private transporterPromise: Promise<nodemailer.Transporter> | null = null;
 
@@ -17,7 +15,7 @@ export class EmailNotificacaoOrcamentoService
    * de credenciais reais de SMTP.
    */
   private async getTransporter(): Promise<nodemailer.Transporter> {
-    if (!this.transporterPromise) {
+    if (this.transporterPromise === null) {
       this.transporterPromise = this.criarTransporter();
     }
     return this.transporterPromise;
@@ -73,7 +71,12 @@ export class EmailNotificacaoOrcamentoService
     const urlAprovar = `${appUrl}/ordens-servico/${os.id}/aprovar-orcamento`;
     const urlRecusar = `${appUrl}/ordens-servico/${os.id}/recusar-orcamento`;
 
-    const html = this.montarHtmlOrcamento(os, valorTotal, urlAprovar, urlRecusar);
+    const html = this.montarHtmlOrcamento(
+      os,
+      valorTotal,
+      urlAprovar,
+      urlRecusar,
+    );
 
     const transporter = await this.getTransporter();
     const info = await transporter.sendMail({
@@ -104,7 +107,10 @@ export class EmailNotificacaoOrcamentoService
     const match = raw.match(/^"?([^"<]*)"?\s*<(.+)>$/);
 
     if (match) {
-      return { name: match[1].trim() || 'Oficina Mecânica', address: match[2].trim() };
+      return {
+        name: match[1].trim() || 'Oficina Mecânica',
+        address: match[2].trim(),
+      };
     }
 
     return { name: 'Oficina Mecânica', address: raw };

@@ -71,61 +71,53 @@ export class OrdemServicoMapper {
             ano: prisma.veiculo.ano,
           }
         : undefined,
-      servicos: (prisma.servicos ?? []).map(
-        (s): IOrdemServicoServico => ({
-          id: s.id,
-          servicoId: s.servicoId,
-          valor: s.valor,
-          servico: s.servico
-            ? {
-                id: s.servico.id,
-                nome: s.servico.nome,
-                descricao: s.servico.descricao,
-                precoBase: s.servico.precoBase,
-              }
-            : undefined,
-        }),
-      ),
-      pecas: (prisma.pecas ?? []).map(
-        (p): IOrdemServicoPeca => ({
-          id: p.id,
-          pecaId: p.pecaId,
-          quantidade: p.quantidade,
-          valorUnitario: p.valorUnitario,
-          peca: p.peca
-            ? {
-                id: p.peca.id,
-                nome: p.peca.nome,
-                descricao: p.peca.descricao,
-                precoUnitario: p.peca.precoUnitario,
-                quantidadeEstoque: p.peca.quantidadeEstoque,
-                quantidadeReservada: p.peca.quantidadeReservada,
-              }
-            : undefined,
-        }),
-      ),
-      orcamentos: (prisma.orcamentos ?? []).map(
-        (o): IOrcamento => ({
-          id: o.id,
-          ordemServicoId: o.ordemServicoId,
-          valorServicos: o.valorServicos,
-          valorPecas: o.valorPecas,
-          valorTotal: o.valorTotal,
-          status: o.status,
-          dataAprovacao: o.dataAprovacao,
-          createdAt: o.createdAt,
-        }),
-      ),
-      historico: (prisma.historico ?? []).map(
-        (h): IHistoricoStatusOS => ({
-          id: h.id,
-          ordemServicoId: h.ordemServicoId,
-          statusAnterior: h.statusAnterior as StatusOS | null | undefined,
-          statusNovo: h.statusNovo as StatusOS,
-          observacao: h.observacao,
-          createdAt: h.createdAt,
-        }),
-      ),
+      servicos: (prisma.servicos ?? []).map((s): IOrdemServicoServico => ({
+        id: s.id,
+        servicoId: s.servicoId,
+        valor: s.valor,
+        servico: s.servico
+          ? {
+              id: s.servico.id,
+              nome: s.servico.nome,
+              descricao: s.servico.descricao,
+              precoBase: s.servico.precoBase,
+            }
+          : undefined,
+      })),
+      pecas: (prisma.pecas ?? []).map((p): IOrdemServicoPeca => ({
+        id: p.id,
+        pecaId: p.pecaId,
+        quantidade: p.quantidade,
+        valorUnitario: p.valorUnitario,
+        peca: p.peca
+          ? {
+              id: p.peca.id,
+              nome: p.peca.nome,
+              descricao: p.peca.descricao,
+              precoUnitario: p.peca.precoUnitario,
+              quantidadeEstoque: p.peca.quantidadeEstoque,
+              quantidadeReservada: p.peca.quantidadeReservada,
+            }
+          : undefined,
+      })),
+      orcamentos: (prisma.orcamentos ?? []).map((o): IOrcamento => ({
+        id: o.id,
+        ordemServicoId: o.ordemServicoId,
+        valorServicos: o.valorServicos,
+        valorPecas: o.valorPecas,
+        valorTotal: o.valorTotal,
+        status: o.status,
+        dataAprovacao: o.dataAprovacao,
+        createdAt: o.createdAt,
+      })),
+      historico: (prisma.historico ?? []).map((h): IHistoricoStatusOS => ({
+        id: h.id,
+        ordemServicoId: h.ordemServicoId,
+        statusAnterior: h.statusAnterior as StatusOS | null | undefined,
+        statusNovo: h.statusNovo as StatusOS,
+        observacao: h.observacao,
+        createdAt: h.createdAt,
+      })),
     };
   }
 

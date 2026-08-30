@@ -42,7 +42,7 @@ describe('BuscarOrdemServicoPorIdUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new BuscarOrdemServicoPorIdUseCase(repository as any);
+    useCase = new BuscarOrdemServicoPorIdUseCase(repository);
   });
 
   it('deve retornar a OS quando encontrada', async () => {
@@ -58,7 +58,9 @@ describe('BuscarOrdemServicoPorIdUseCase', () => {
   it('deve lançar NotFoundException quando OS não existe', async () => {
     repository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('inexistente')).rejects.toThrow(NotFoundException);
+    await expect(useCase.execute('inexistente')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });
 
@@ -71,11 +73,16 @@ describe('ConsultarStatusOSUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new ConsultarStatusOSUseCase(repository as any);
+    useCase = new ConsultarStatusOSUseCase(repository);
   });
 
   it('deve retornar status quando OS existe', async () => {
-    const statusInfo = { id: 'os1', numero: 1, status: StatusOS.EM_DIAGNOSTICO, dataCriacao: new Date() };
+    const statusInfo = {
+      id: 'os1',
+      numero: 1,
+      status: StatusOS.EM_DIAGNOSTICO,
+      dataCriacao: new Date(),
+    };
     repository.findStatusById.mockResolvedValue(statusInfo);
 
     const result = await useCase.execute('os1');
@@ -87,7 +94,9 @@ describe('ConsultarStatusOSUseCase', () => {
   it('deve lançar NotFoundException quando OS não existe', async () => {
     repository.findStatusById.mockResolvedValue(null);
 
-    await expect(useCase.execute('inexistente')).rejects.toThrow(NotFoundException);
+    await expect(useCase.execute('inexistente')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });
 
@@ -100,14 +109,14 @@ describe('AdicionarServicoOSUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new AdicionarServicoOSUseCase(repository as any);
+    useCase = new AdicionarServicoOSUseCase(repository);
   });
 
   it('deve adicionar serviço quando OS está RECEBIDA', async () => {
     repository.findById.mockResolvedValue(makeOS(StatusOS.RECEBIDA));
     repository.adicionarServico.mockResolvedValue(makeOS(StatusOS.RECEBIDA));
 
-    await useCase.execute('os1', { servicoId: 's1' } as any);
+    await useCase.execute('os1', { servicoId: 's1' });
 
     expect(repository.adicionarServico).toHaveBeenCalledWith('os1', {
       servicoId: 's1',
@@ -117,28 +126,32 @@ describe('AdicionarServicoOSUseCase', () => {
 
   it('deve adicionar serviço quando OS está EM_DIAGNOSTICO', async () => {
     repository.findById.mockResolvedValue(makeOS(StatusOS.EM_DIAGNOSTICO));
-    repository.adicionarServico.mockResolvedValue(makeOS(StatusOS.EM_DIAGNOSTICO));
+    repository.adicionarServico.mockResolvedValue(
+      makeOS(StatusOS.EM_DIAGNOSTICO),
+    );
 
-    await useCase.execute('os1', { servicoId: 's1' } as any);
+    await useCase.execute('os1', { servicoId: 's1' });
 
     expect(repository.adicionarServico).toHaveBeenCalled();
   });
 
   it('deve lançar BusinessException quando OS está em outro status', async () => {
-    repository.findById.mockResolvedValue(makeOS(StatusOS.AGUARDANDO_APROVACAO));
-
-    await expect(useCase.execute('os1', { servicoId: 's1' } as any)).rejects.toThrow(
-      BusinessException,
+    repository.findById.mockResolvedValue(
+      makeOS(StatusOS.AGUARDANDO_APROVACAO),
     );
+
+    await expect(
+      useCase.execute('os1', { servicoId: 's1' } as any),
+    ).rejects.toThrow(BusinessException);
     expect(repository.adicionarServico).not.toHaveBeenCalled();
   });
 
   it('deve lançar NotFoundException quando OS não existe', async () => {
     repository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('inexistente', { servicoId: 's1' } as any)).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(
+      useCase.execute('inexistente', { servicoId: 's1' } as any),
+    ).rejects.toThrow(NotFoundException);
   });
 });
 
@@ -151,14 +164,14 @@ describe('AdicionarPecaOSUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new AdicionarPecaOSUseCase(repository as any);
+    useCase = new AdicionarPecaOSUseCase(repository);
   });
 
   it('deve adicionar peça quando OS está RECEBIDA', async () => {
     repository.findById.mockResolvedValue(makeOS(StatusOS.RECEBIDA));
     repository.adicionarPeca.mockResolvedValue(makeOS(StatusOS.RECEBIDA));
 
-    await useCase.execute('os1', { pecaId: 'p1', quantidade: 2 } as any);
+    await useCase.execute('os1', { pecaId: 'p1', quantidade: 2 });
 
     expect(repository.adicionarPeca).toHaveBeenCalledWith('os1', {
       pecaId: 'p1',
@@ -171,7 +184,7 @@ describe('AdicionarPecaOSUseCase', () => {
     repository.findById.mockResolvedValue(makeOS(StatusOS.EM_DIAGNOSTICO));
     repository.adicionarPeca.mockResolvedValue(makeOS(StatusOS.EM_DIAGNOSTICO));
 
-    await useCase.execute('os1', { pecaId: 'p1', quantidade: 1 } as any);
+    await useCase.execute('os1', { pecaId: 'p1', quantidade: 1 });
 
     expect(repository.adicionarPeca).toHaveBeenCalled();
   });
@@ -203,7 +216,7 @@ describe('IniciarExecucaoUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new IniciarExecucaoUseCase(repository as any);
+    useCase = new IniciarExecucaoUseCase(repository);
   });
 
   it('deve transicionar para EM_EXECUCAO quando orçamento está APROVADO', async () => {
@@ -211,7 +224,9 @@ describe('IniciarExecucaoUseCase', () => {
       orcamentos: [{ id: 'orc1', status: 'APROVADO' }],
     });
     repository.findById.mockResolvedValue(os);
-    repository.transicionarStatus.mockResolvedValue(makeOS(StatusOS.EM_EXECUCAO));
+    repository.transicionarStatus.mockResolvedValue(
+      makeOS(StatusOS.EM_EXECUCAO),
+    );
 
     await useCase.execute('os1');
 
@@ -250,6 +265,8 @@ describe('IniciarExecucaoUseCase', () => {
   it('deve lançar NotFoundException quando OS não existe', async () => {
     repository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('inexistente')).rejects.toThrow(NotFoundException);
+    await expect(useCase.execute('inexistente')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

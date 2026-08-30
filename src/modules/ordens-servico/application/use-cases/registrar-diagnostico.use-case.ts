@@ -15,7 +15,10 @@ export class RegistrarDiagnosticoUseCase {
     private readonly repository: IOrdemServicoRepository,
   ) {}
 
-  async execute(id: string, dto: RegistrarDiagnosticoDto): Promise<IOrdemServico> {
+  async execute(
+    id: string,
+    dto: RegistrarDiagnosticoDto,
+  ): Promise<IOrdemServico> {
     const os = await this.repository.findById(id);
     if (!os) {
       throw new NotFoundException('Ordem de Serviço não encontrada');

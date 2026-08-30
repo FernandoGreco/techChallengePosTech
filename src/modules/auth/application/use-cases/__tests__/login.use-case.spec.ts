@@ -8,7 +8,7 @@ describe('LoginUseCase', () => {
   const mockJwtService = { sign: jest.fn() };
 
   beforeEach(() => {
-    useCase = new LoginUseCase(mockUsuarioRepository as any, mockJwtService as any);
+    useCase = new LoginUseCase(mockUsuarioRepository, mockJwtService as any);
     jest.clearAllMocks();
   });
 

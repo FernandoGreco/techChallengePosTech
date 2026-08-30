@@ -26,7 +26,9 @@ export class IniciarExecucaoUseCase {
       );
     }
 
-    const orcamentoAprovado = os.orcamentos.find((o) => o.status === 'APROVADO');
+    const orcamentoAprovado = os.orcamentos.find(
+      (o) => o.status === 'APROVADO',
+    );
     if (!orcamentoAprovado) {
       throw new BusinessException(
         'Só é possível iniciar execução se o orçamento estiver aprovado',

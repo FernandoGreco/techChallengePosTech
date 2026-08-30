@@ -15,13 +15,19 @@ export class AdicionarPecaOSUseCase {
     private readonly repository: IOrdemServicoRepository,
   ) {}
 
-  async execute(ordemServicoId: string, dto: AddPecaOSDto): Promise<IOrdemServico> {
+  async execute(
+    ordemServicoId: string,
+    dto: AddPecaOSDto,
+  ): Promise<IOrdemServico> {
     const os = await this.repository.findById(ordemServicoId);
     if (!os) {
       throw new NotFoundException('Ordem de Serviço não encontrada');
     }
 
-    if (os.status !== StatusOS.RECEBIDA && os.status !== StatusOS.EM_DIAGNOSTICO) {
+    if (
+      os.status !== StatusOS.RECEBIDA &&
+      os.status !== StatusOS.EM_DIAGNOSTICO
+    ) {
       throw new BusinessException(
         'Só é possível adicionar peças em OS com status RECEBIDA ou EM_DIAGNOSTICO',
       );

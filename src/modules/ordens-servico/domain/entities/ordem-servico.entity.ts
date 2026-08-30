@@ -57,8 +57,20 @@ export interface IOrdemServico {
   dataEntrega?: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  cliente?: { id: string; nome: string; documento: string; telefone: string; email: string };
-  veiculo?: { id: string; placa: string; marca: string; modelo: string; ano: number };
+  cliente?: {
+    id: string;
+    nome: string;
+    documento: string;
+    telefone: string;
+    email: string;
+  };
+  veiculo?: {
+    id: string;
+    placa: string;
+    marca: string;
+    modelo: string;
+    ano: number;
+  };
   servicos: IOrdemServicoServico[];
   pecas: IOrdemServicoPeca[];
   orcamentos: IOrcamento[];

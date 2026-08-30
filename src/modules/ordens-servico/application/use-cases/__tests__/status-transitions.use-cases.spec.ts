@@ -39,12 +39,14 @@ describe('IniciarDiagnosticoUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new IniciarDiagnosticoUseCase(repository as any);
+    useCase = new IniciarDiagnosticoUseCase(repository);
   });
 
   it('deve transicionar OS de RECEBIDA para EM_DIAGNOSTICO', async () => {
     repository.findById.mockResolvedValue(makeOS(StatusOS.RECEBIDA));
-    repository.transicionarStatus.mockResolvedValue(makeOS(StatusOS.EM_DIAGNOSTICO));
+    repository.transicionarStatus.mockResolvedValue(
+      makeOS(StatusOS.EM_DIAGNOSTICO),
+    );
 
     await useCase.execute('os1');
 
@@ -75,23 +77,28 @@ describe('RegistrarDiagnosticoUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new RegistrarDiagnosticoUseCase(repository as any);
+    useCase = new RegistrarDiagnosticoUseCase(repository);
   });
 
   it('deve registrar diagnóstico quando OS está EM_DIAGNOSTICO', async () => {
     repository.findById.mockResolvedValue(makeOS(StatusOS.EM_DIAGNOSTICO));
-    repository.atualizarDiagnostico.mockResolvedValue(makeOS(StatusOS.EM_DIAGNOSTICO));
+    repository.atualizarDiagnostico.mockResolvedValue(
+      makeOS(StatusOS.EM_DIAGNOSTICO),
+    );
 
     await useCase.execute('os1', { diagnostico: 'Motor com problema' });
 
-    expect(repository.atualizarDiagnostico).toHaveBeenCalledWith('os1', 'Motor com problema');
+    expect(repository.atualizarDiagnostico).toHaveBeenCalledWith(
+      'os1',
+      'Motor com problema',
+    );
   });
 
   it('deve lançar BusinessException se OS não estiver EM_DIAGNOSTICO', async () => {
     repository.findById.mockResolvedValue(makeOS(StatusOS.RECEBIDA));
-    await expect(useCase.execute('os1', { diagnostico: 'Teste' })).rejects.toThrow(
-      BusinessException,
-    );
+    await expect(
+      useCase.execute('os1', { diagnostico: 'Teste' }),
+    ).rejects.toThrow(BusinessException);
   });
 });
 
@@ -102,7 +109,7 @@ describe('FinalizarOSUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new FinalizarOSUseCase(repository as any);
+    useCase = new FinalizarOSUseCase(repository);
   });
 
   it('deve finalizar OS e baixar estoque das peças', async () => {
@@ -139,7 +146,7 @@ describe('EntregarOSUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new EntregarOSUseCase(repository as any);
+    useCase = new EntregarOSUseCase(repository);
   });
 
   it('deve transicionar OS de FINALIZADA para ENTREGUE', async () => {

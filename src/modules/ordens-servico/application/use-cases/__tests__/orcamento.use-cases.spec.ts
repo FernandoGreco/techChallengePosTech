@@ -38,7 +38,7 @@ describe('GerarOrcamentoUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new GerarOrcamentoUseCase(repository as any, null);
+    useCase = new GerarOrcamentoUseCase(repository, null);
   });
 
   it('deve gerar orçamento somando serviços e peças', async () => {
@@ -47,7 +47,10 @@ describe('GerarOrcamentoUseCase', () => {
       pecas: [{ valorUnitario: 30, quantidade: 2 }],
     });
     repository.findById.mockResolvedValue(os);
-    repository.gerarOrcamento.mockResolvedValue({ ...os, status: StatusOS.AGUARDANDO_APROVACAO });
+    repository.gerarOrcamento.mockResolvedValue({
+      ...os,
+      status: StatusOS.AGUARDANDO_APROVACAO,
+    });
 
     await useCase.execute('os1');
 
@@ -79,15 +82,20 @@ describe('GerarOrcamentoUseCase', () => {
     repository.findById.mockResolvedValue(os);
     repository.gerarOrcamento.mockResolvedValue(osAtualizado);
 
-    const mockNotificacao = { notificarOrcamentoPendente: jest.fn().mockResolvedValue(undefined) };
+    const mockNotificacao = {
+      notificarOrcamentoPendente: jest.fn().mockResolvedValue(undefined),
+    };
     const useCaseComNotificacao = new GerarOrcamentoUseCase(
-      repository as any,
-      mockNotificacao as any,
+      repository,
+      mockNotificacao,
     );
 
     await useCaseComNotificacao.execute('os1');
 
-    expect(mockNotificacao.notificarOrcamentoPendente).toHaveBeenCalledWith(osAtualizado, 200);
+    expect(mockNotificacao.notificarOrcamentoPendente).toHaveBeenCalledWith(
+      osAtualizado,
+      200,
+    );
   });
 
   it('não deve falhar se serviço de notificação não estiver configurado', async () => {
@@ -96,7 +104,10 @@ describe('GerarOrcamentoUseCase', () => {
       pecas: [],
     });
     repository.findById.mockResolvedValue(os);
-    repository.gerarOrcamento.mockResolvedValue({ ...os, status: StatusOS.AGUARDANDO_APROVACAO });
+    repository.gerarOrcamento.mockResolvedValue({
+      ...os,
+      status: StatusOS.AGUARDANDO_APROVACAO,
+    });
 
     await expect(useCase.execute('os1')).resolves.not.toThrow();
   });
@@ -109,7 +120,7 @@ describe('AprovarOrcamentoUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new AprovarOrcamentoUseCase(repository as any);
+    useCase = new AprovarOrcamentoUseCase(repository);
   });
 
   it('deve aprovar orçamento e reservar peças com estoque suficiente', async () => {
@@ -124,7 +135,10 @@ describe('AprovarOrcamentoUseCase', () => {
       ],
     });
     repository.findById.mockResolvedValue(os);
-    repository.aprovarOrcamento.mockResolvedValue({ ...os, status: StatusOS.EM_EXECUCAO });
+    repository.aprovarOrcamento.mockResolvedValue({
+      ...os,
+      status: StatusOS.EM_EXECUCAO,
+    });
 
     await useCase.execute('os1');
 
@@ -173,7 +187,7 @@ describe('RecusarOrcamentoUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = makeRepository();
-    useCase = new RecusarOrcamentoUseCase(repository as any);
+    useCase = new RecusarOrcamentoUseCase(repository);
   });
 
   it('deve recusar orçamento e retornar OS para EM_DIAGNOSTICO', async () => {
@@ -181,7 +195,10 @@ describe('RecusarOrcamentoUseCase', () => {
       orcamentos: [{ id: 'orc1', status: 'GERADO' }],
     });
     repository.findById.mockResolvedValue(os);
-    repository.recusarOrcamento.mockResolvedValue({ ...os, status: StatusOS.EM_DIAGNOSTICO });
+    repository.recusarOrcamento.mockResolvedValue({
+      ...os,
+      status: StatusOS.EM_DIAGNOSTICO,
+    });
 
     await useCase.execute('os1');
 

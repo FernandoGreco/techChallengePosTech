@@ -50,7 +50,9 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
     if (!veiculo) throw new NotFoundException('Veículo não encontrado');
 
     if (veiculo.clienteId !== input.clienteId) {
-      throw new NotFoundException('O veículo não pertence ao cliente informado');
+      throw new NotFoundException(
+        'O veículo não pertence ao cliente informado',
+      );
     }
 
     const created = await this.prisma.$transaction(async (tx) => {
@@ -72,10 +74,19 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
 
       if (input.servicos?.length) {
         for (const s of input.servicos) {
-          const servico = await tx.servico.findUnique({ where: { id: s.servicoId } });
-          if (!servico) throw new NotFoundException(`Serviço ${s.servicoId} não encontrado`);
+          const servico = await tx.servico.findUnique({
+            where: { id: s.servicoId },
+          });
+          if (!servico)
+            throw new NotFoundException(
+              `Serviço ${s.servicoId} não encontrado`,
+            );
           await tx.ordemServicoServico.create({
-            data: { ordemServicoId: os.id, servicoId: s.servicoId, valor: servico.precoBase },
+            data: {
+              ordemServicoId: os.id,
+              servicoId: s.servicoId,
+              valor: servico.precoBase,
+            },
           });
         }
       }
@@ -83,7 +94,8 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       if (input.pecas?.length) {
         for (const p of input.pecas) {
           const peca = await tx.peca.findUnique({ where: { id: p.pecaId } });
-          if (!peca) throw new NotFoundException(`Peça ${p.pecaId} não encontrada`);
+          if (!peca)
+            throw new NotFoundException(`Peça ${p.pecaId} não encontrada`);
           await tx.ordemServicoPeca.create({
             data: {
               ordemServicoId: os.id,
@@ -98,7 +110,7 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       return os;
     });
 
-    return this.findById(created.id) as Promise<IOrdemServico>;
+    return this.findById(created.id);
   }
 
   async findAll(): Promise<IOrdemServico[]> {
@@ -118,14 +130,12 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       orderBy: { dataCriacao: 'asc' },
     });
 
-    return results
-      .map(OrdemServicoMapper.toDomain)
-      .sort((a, b) => {
-        const prioA = STATUS_PRIORIDADE[a.status] ?? 99;
-        const prioB = STATUS_PRIORIDADE[b.status] ?? 99;
-        if (prioA !== prioB) return prioA - prioB;
-        return a.dataCriacao.getTime() - b.dataCriacao.getTime();
-      });
+    return results.map(OrdemServicoMapper.toDomain).sort((a, b) => {
+      const prioA = STATUS_PRIORIDADE[a.status] ?? 99;
+      const prioB = STATUS_PRIORIDADE[b.status] ?? 99;
+      if (prioA !== prioB) return prioA - prioB;
+      return a.dataCriacao.getTime() - b.dataCriacao.getTime();
+    });
   }
 
   async findById(id: string): Promise<IOrdemServico | null> {
@@ -152,7 +162,9 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       },
     });
     if (!os) return null;
-    return OrdemServicoMapper.toStatusConsulta(os as Parameters<typeof OrdemServicoMapper.toStatusConsulta>[0]);
+    return OrdemServicoMapper.toStatusConsulta(
+      os as Parameters<typeof OrdemServicoMapper.toStatusConsulta>[0],
+    );
   }
 
   async adicionarServico(
@@ -172,7 +184,7 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       },
     });
 
-    return this.findById(ordemServicoId) as Promise<IOrdemServico>;
+    return this.findById(ordemServicoId);
   }
 
   async adicionarPeca(
@@ -193,18 +205,23 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       },
     });
 
-    return this.findById(ordemServicoId) as Promise<IOrdemServico>;
+    return this.findById(ordemServicoId);
   }
 
-  async atualizarDiagnostico(id: string, diagnostico: string): Promise<IOrdemServico> {
+  async atualizarDiagnostico(
+    id: string,
+    diagnostico: string,
+  ): Promise<IOrdemServico> {
     await this.prisma.ordemServico.update({
       where: { id },
       data: { diagnostico },
     });
-    return this.findById(id) as Promise<IOrdemServico>;
+    return this.findById(id);
   }
 
-  async transicionarStatus(input: ITransicaoStatusInput): Promise<IOrdemServico> {
+  async transicionarStatus(
+    input: ITransicaoStatusInput,
+  ): Promise<IOrdemServico> {
     const dadosOS: Record<string, unknown> = { status: input.statusNovo };
     if (input.dadosAdicionais) {
       Object.assign(dadosOS, input.dadosAdicionais);
@@ -225,7 +242,7 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       }),
     ]);
 
-    return this.findById(input.id) as Promise<IOrdemServico>;
+    return this.findById(input.id);
   }
 
   async gerarOrcamento(input: IGerarOrcamentoInput): Promise<IOrdemServico> {
@@ -257,10 +274,12 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       });
     });
 
-    return this.findById(input.id) as Promise<IOrdemServico>;
+    return this.findById(input.id);
   }
 
-  async aprovarOrcamento(input: IAprovarOrcamentoInput): Promise<IOrdemServico> {
+  async aprovarOrcamento(
+    input: IAprovarOrcamentoInput,
+  ): Promise<IOrdemServico> {
     await this.prisma.$transaction(async (tx) => {
       await tx.orcamento.update({
         where: { id: input.orcamentoId },
@@ -273,11 +292,16 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       });
 
       for (const reserva of input.reservas) {
-        const peca = await tx.peca.findUnique({ where: { id: reserva.pecaId } });
-        if (!peca) throw new NotFoundException(`Peça ${reserva.pecaId} não encontrada`);
+        const peca = await tx.peca.findUnique({
+          where: { id: reserva.pecaId },
+        });
+        if (!peca)
+          throw new NotFoundException(`Peça ${reserva.pecaId} não encontrada`);
         await tx.peca.update({
           where: { id: reserva.pecaId },
-          data: { quantidadeReservada: peca.quantidadeReservada + reserva.quantidade },
+          data: {
+            quantidadeReservada: peca.quantidadeReservada + reserva.quantidade,
+          },
         });
       }
 
@@ -291,10 +315,12 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       });
     });
 
-    return this.findById(input.id) as Promise<IOrdemServico>;
+    return this.findById(input.id);
   }
 
-  async recusarOrcamento(input: IRecusarOrcamentoInput): Promise<IOrdemServico> {
+  async recusarOrcamento(
+    input: IRecusarOrcamentoInput,
+  ): Promise<IOrdemServico> {
     await this.prisma.$transaction(async (tx) => {
       await tx.orcamento.update({
         where: { id: input.orcamentoId },
@@ -311,12 +337,13 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
           ordemServicoId: input.id,
           statusAnterior: StatusOS.AGUARDANDO_APROVACAO,
           statusNovo: StatusOS.EM_DIAGNOSTICO,
-          observacao: 'Orçamento recusado pelo cliente — OS retornada para diagnóstico',
+          observacao:
+            'Orçamento recusado pelo cliente — OS retornada para diagnóstico',
         },
       });
     });
 
-    return this.findById(input.id) as Promise<IOrdemServico>;
+    return this.findById(input.id);
   }
 
   async baixarEstoque(input: IBaixarEstoqueInput): Promise<IOrdemServico> {
@@ -328,7 +355,10 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
             where: { id: item.pecaId },
             data: {
               quantidadeEstoque: peca.quantidadeEstoque - item.quantidade,
-              quantidadeReservada: Math.max(0, peca.quantidadeReservada - item.quantidade),
+              quantidadeReservada: Math.max(
+                0,
+                peca.quantidadeReservada - item.quantidade,
+              ),
             },
           });
         }
@@ -349,6 +379,6 @@ export class OrdemServicoPrismaRepository implements IOrdemServicoRepository {
       });
     });
 
-    return this.findById(input.id) as Promise<IOrdemServico>;
+    return this.findById(input.id);
   }
 }

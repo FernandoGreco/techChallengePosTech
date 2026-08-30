@@ -130,9 +130,13 @@ export class OrdensServicoController {
   @Post(':id/aprovar-orcamento')
   @ApiOperation({
     summary: 'Aprovar orçamento da OS',
-    description: 'Endpoint público para notificações externas de aprovação do cliente.',
+    description:
+      'Endpoint público para notificações externas de aprovação do cliente.',
   })
-  @ApiResponse({ status: 200, description: 'Orçamento aprovado — OS movida para EM_EXECUCAO' })
+  @ApiResponse({
+    status: 200,
+    description: 'Orçamento aprovado — OS movida para EM_EXECUCAO',
+  })
   aprovarOrcamentoOS(@Param('id') id: string) {
     return this.aprovarOrcamento.execute(id);
   }
@@ -141,9 +145,13 @@ export class OrdensServicoController {
   @Post(':id/recusar-orcamento')
   @ApiOperation({
     summary: 'Recusar orçamento da OS',
-    description: 'Endpoint público para notificações externas de recusa do cliente. OS retorna para EM_DIAGNOSTICO.',
+    description:
+      'Endpoint público para notificações externas de recusa do cliente. OS retorna para EM_DIAGNOSTICO.',
   })
-  @ApiResponse({ status: 200, description: 'Orçamento recusado — OS retornada para EM_DIAGNOSTICO' })
+  @ApiResponse({
+    status: 200,
+    description: 'Orçamento recusado — OS retornada para EM_DIAGNOSTICO',
+  })
   recusarOrcamentoOS(@Param('id') id: string) {
     return this.recusarOrcamento.execute(id);
   }
@@ -158,7 +166,9 @@ export class OrdensServicoController {
 
   @ApiBearerAuth()
   @Post(':id/finalizar')
-  @ApiOperation({ summary: 'Finalizar OS — baixa estoque das peças utilizadas' })
+  @ApiOperation({
+    summary: 'Finalizar OS — baixa estoque das peças utilizadas',
+  })
   @ApiResponse({ status: 200, description: 'OS finalizada' })
   finalizarOS(@Param('id') id: string) {
     return this.finalizarOSUseCase.execute(id);
@@ -167,7 +177,10 @@ export class OrdensServicoController {
   @ApiBearerAuth()
   @Post(':id/entregar')
   @ApiOperation({ summary: 'Entregar veículo ao cliente' })
-  @ApiResponse({ status: 200, description: 'Veículo entregue — OS marcada como ENTREGUE' })
+  @ApiResponse({
+    status: 200,
+    description: 'Veículo entregue — OS marcada como ENTREGUE',
+  })
   entregarOS(@Param('id') id: string) {
     return this.entregarOSUseCase.execute(id);
   }

@@ -1,4 +1,3 @@
-import { NotFoundException } from '@nestjs/common';
 import { CriarOrdemServicoUseCase } from '../criar-ordem-servico.use-case';
 import { StatusOS } from '../../../domain/enums/status-os.enum';
 
@@ -23,7 +22,7 @@ describe('CriarOrdemServicoUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    useCase = new CriarOrdemServicoUseCase(mockRepository as any);
+    useCase = new CriarOrdemServicoUseCase(mockRepository);
   });
 
   it('deve criar OS com status RECEBIDA e retornar dados', async () => {
@@ -37,7 +36,7 @@ describe('CriarOrdemServicoUseCase', () => {
     };
     mockRepository.criar.mockResolvedValue(osResult);
 
-    const result = await useCase.execute(dto as any);
+    const result = await useCase.execute(dto);
 
     expect(mockRepository.criar).toHaveBeenCalledWith({
       clienteId: 'c1',

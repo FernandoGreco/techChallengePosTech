@@ -2,7 +2,11 @@ import { NotFoundException } from '@nestjs/common';
 import { OrdemServicoPrismaRepository } from '../ordem-servico-prisma.repository';
 import { StatusOS } from '../../../domain/enums/status-os.enum';
 
-const makeOSRecord = (id: string, status: StatusOS, dataCriacao = new Date()) => ({
+const makeOSRecord = (
+  id: string,
+  status: StatusOS,
+  dataCriacao = new Date(),
+) => ({
   id,
   numero: 1,
   clienteId: 'c1',
@@ -38,7 +42,11 @@ const makeTx = () => ({
 const makePrisma = () => ({
   cliente: { findUnique: jest.fn() },
   veiculo: { findUnique: jest.fn() },
-  ordemServico: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+  ordemServico: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
   ordemServicoServico: { create: jest.fn() },
   ordemServicoPeca: { create: jest.fn() },
   servico: { findUnique: jest.fn() },
@@ -62,13 +70,15 @@ describe('OrdemServicoPrismaRepository', () => {
 
   describe('findById', () => {
     it('deve retornar domain entity quando encontrado', async () => {
-      prisma.ordemServico.findUnique.mockResolvedValue(makeOSRecord('os1', StatusOS.RECEBIDA));
+      prisma.ordemServico.findUnique.mockResolvedValue(
+        makeOSRecord('os1', StatusOS.RECEBIDA),
+      );
 
       const result = await repository.findById('os1');
 
       expect(result).not.toBeNull();
-      expect(result!.id).toBe('os1');
-      expect(result!.status).toBe(StatusOS.RECEBIDA);
+      expect(result.id).toBe('os1');
+      expect(result.status).toBe(StatusOS.RECEBIDA);
     });
 
     it('deve retornar null quando não encontrado', async () => {
@@ -101,12 +111,14 @@ describe('OrdemServicoPrismaRepository', () => {
 
   describe('findStatusById', () => {
     it('deve retornar status consulta quando encontrado', async () => {
-      prisma.ordemServico.findUnique.mockResolvedValue(makeOSRecord('os1', StatusOS.EM_DIAGNOSTICO));
+      prisma.ordemServico.findUnique.mockResolvedValue(
+        makeOSRecord('os1', StatusOS.EM_DIAGNOSTICO),
+      );
 
       const result = await repository.findStatusById('os1');
 
       expect(result).not.toBeNull();
-      expect(result!.status).toBe(StatusOS.EM_DIAGNOSTICO);
+      expect(result.status).toBe(StatusOS.EM_DIAGNOSTICO);
     });
 
     it('deve retornar null quando não encontrado', async () => {
@@ -140,7 +152,10 @@ describe('OrdemServicoPrismaRepository', () => {
 
     it('deve lançar NotFoundException quando veículo não pertence ao cliente', async () => {
       prisma.cliente.findUnique.mockResolvedValue({ id: 'c1' });
-      prisma.veiculo.findUnique.mockResolvedValue({ id: 'v1', clienteId: 'outro-cliente' });
+      prisma.veiculo.findUnique.mockResolvedValue({
+        id: 'v1',
+        clienteId: 'outro-cliente',
+      });
 
       await expect(
         repository.criar({ clienteId: 'c1', veiculoId: 'v1' }),
@@ -149,19 +164,29 @@ describe('OrdemServicoPrismaRepository', () => {
 
     it('deve criar OS simples via transaction', async () => {
       prisma.cliente.findUnique.mockResolvedValue({ id: 'c1' });
-      prisma.veiculo.findUnique.mockResolvedValue({ id: 'v1', clienteId: 'c1' });
+      prisma.veiculo.findUnique.mockResolvedValue({
+        id: 'v1',
+        clienteId: 'c1',
+      });
 
       const tx = makeTx();
       tx.ordemServico.create.mockResolvedValue({ id: 'os-new' });
       tx.historicoStatusOS.create.mockResolvedValue({});
       prisma.$transaction.mockImplementation((cb: any) => cb(tx));
 
-      prisma.ordemServico.findUnique.mockResolvedValue(makeOSRecord('os-new', StatusOS.RECEBIDA));
+      prisma.ordemServico.findUnique.mockResolvedValue(
+        makeOSRecord('os-new', StatusOS.RECEBIDA),
+      );
 
-      const result = await repository.criar({ clienteId: 'c1', veiculoId: 'v1' });
+      const result = await repository.criar({
+        clienteId: 'c1',
+        veiculoId: 'v1',
+      });
 
       expect(tx.ordemServico.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ status: StatusOS.RECEBIDA }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ status: StatusOS.RECEBIDA }),
+        }),
       );
       expect(result.id).toBe('os-new');
     });
@@ -176,7 +201,10 @@ describe('OrdemServicoPrismaRepository', () => {
         makeOSRecord('os1', StatusOS.EM_DIAGNOSTICO),
       );
 
-      const result = await repository.atualizarDiagnostico('os1', 'Motor desgastado');
+      const result = await repository.atualizarDiagnostico(
+        'os1',
+        'Motor desgastado',
+      );
 
       expect(prisma.ordemServico.update).toHaveBeenCalledWith({
         where: { id: 'os1' },
@@ -220,9 +248,14 @@ describe('OrdemServicoPrismaRepository', () => {
     it('deve criar registro e retornar OS atualizada', async () => {
       prisma.servico.findUnique.mockResolvedValue({ id: 's1', precoBase: 200 });
       prisma.ordemServicoServico.create.mockResolvedValue({});
-      prisma.ordemServico.findUnique.mockResolvedValue(makeOSRecord('os1', StatusOS.RECEBIDA));
+      prisma.ordemServico.findUnique.mockResolvedValue(
+        makeOSRecord('os1', StatusOS.RECEBIDA),
+      );
 
-      const result = await repository.adicionarServico('os1', { servicoId: 's1', valor: 0 });
+      const result = await repository.adicionarServico('os1', {
+        servicoId: 's1',
+        valor: 0,
+      });
 
       expect(prisma.ordemServicoServico.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -240,14 +273,20 @@ describe('OrdemServicoPrismaRepository', () => {
       prisma.peca.findUnique.mockResolvedValue(null);
 
       await expect(
-        repository.adicionarPeca('os1', { pecaId: 'p-nope', quantidade: 1, valorUnitario: 0 }),
+        repository.adicionarPeca('os1', {
+          pecaId: 'p-nope',
+          quantidade: 1,
+          valorUnitario: 0,
+        }),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('deve criar registro e retornar OS atualizada', async () => {
       prisma.peca.findUnique.mockResolvedValue({ id: 'p1', precoUnitario: 80 });
       prisma.ordemServicoPeca.create.mockResolvedValue({});
-      prisma.ordemServico.findUnique.mockResolvedValue(makeOSRecord('os1', StatusOS.RECEBIDA));
+      prisma.ordemServico.findUnique.mockResolvedValue(
+        makeOSRecord('os1', StatusOS.RECEBIDA),
+      );
 
       const result = await repository.adicionarPeca('os1', {
         pecaId: 'p1',
@@ -257,7 +296,11 @@ describe('OrdemServicoPrismaRepository', () => {
 
       expect(prisma.ordemServicoPeca.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ pecaId: 'p1', quantidade: 3, valorUnitario: 80 }),
+          data: expect.objectContaining({
+            pecaId: 'p1',
+            quantidade: 3,
+            valorUnitario: 80,
+          }),
         }),
       );
       expect(result.id).toBe('os1');

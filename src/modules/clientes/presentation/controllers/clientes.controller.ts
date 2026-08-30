@@ -38,7 +38,6 @@ export class ClientesController {
   // async listarTodos() {
   //   return this.clientesUseCase.listarTodos();
   // }
-
   async listarTodos(@Query('delay') delay?: string) {
     if (delay !== undefined) {
       // Se mandar apenas ?delay sem valor, assume 3000ms. Se passar ?delay=5000, usa 5000ms.

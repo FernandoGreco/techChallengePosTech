@@ -32,7 +32,9 @@ export class AprovarOrcamentoUseCase {
 
     for (const pecaOS of os.pecas) {
       if (!pecaOS.peca) {
-        throw new NotFoundException(`Dados da peça ${pecaOS.pecaId} não encontrados`);
+        throw new NotFoundException(
+          `Dados da peça ${pecaOS.pecaId} não encontrados`,
+        );
       }
       EstoqueRules.validarDisponibilidade(
         pecaOS.peca.quantidadeEstoque,

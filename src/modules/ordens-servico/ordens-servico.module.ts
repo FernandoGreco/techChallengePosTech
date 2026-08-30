@@ -41,8 +41,14 @@ const useCases = [
   imports: [DatabaseModule],
   controllers: [OrdensServicoController],
   providers: [
-    { provide: ORDEM_SERVICO_REPOSITORY, useClass: OrdemServicoPrismaRepository },
-    { provide: NOTIFICACAO_ORCAMENTO_SERVICE, useClass: EmailNotificacaoOrcamentoService },
+    {
+      provide: ORDEM_SERVICO_REPOSITORY,
+      useClass: OrdemServicoPrismaRepository,
+    },
+    {
+      provide: NOTIFICACAO_ORCAMENTO_SERVICE,
+      useClass: EmailNotificacaoOrcamentoService,
+    },
     ...useCases,
   ],
   exports: useCases,
