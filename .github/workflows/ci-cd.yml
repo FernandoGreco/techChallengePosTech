@@ -302,6 +302,10 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
+          # Docker exige nomes de imagem em lowercase
+          IMAGE_NAME="ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]'):latest"
+          echo "📦 Imagem: $IMAGE_NAME"
+
           echo "⏳ Aguardando instancia EC2 ficar acessivel via SSH..."
           for i in $(seq 1 24); do
             if nc -z -w5 "$EC2_HOST" 22 2>/dev/null; then
@@ -317,7 +321,8 @@ jobs:
 
           echo "🚀 Conectando na EC2 e fazendo deploy..."
           ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -i /tmp/ssh_key.pem ubuntu@"$EC2_HOST" \
-            "
+            "IMAGE_NAME=$IMAGE_NAME
+
             set -e
             echo '🐳 Verificando Docker...'
             for i in \$(seq 1 12); do
@@ -333,7 +338,7 @@ jobs:
             echo '$GITHUB_TOKEN' | sudo docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin
 
             echo '🚀 Baixando imagem mais recente...'
-            sudo docker pull 'ghcr.io/$GITHUB_REPOSITORY:latest'
+            sudo docker pull '$IMAGE_NAME'
 
             echo '🔄 Removendo container anterior...'
             sudo docker stop oficina-api 2>/dev/null || true
@@ -348,7 +353,7 @@ jobs:
               -e JWT_SECRET='fiap-tech-challenge-secret-2026' \
               -e JWT_EXPIRES_IN='1d' \
               -e PORT=3000 \
-              'ghcr.io/$GITHUB_REPOSITORY:latest'
+              '$IMAGE_NAME'
 
             echo '✅ Container iniciado!'
             sudo docker ps | grep oficina-api
