@@ -1,14 +1,24 @@
-# Oficina Mecânica - Sistema de Gestão (MVP)
+# Oficina Mecânica - Sistema de Gestão (Fase 2)
 
 ## 1. Objetivo
 
-MVP acadêmico de um sistema de gestão para oficina mecânica de médio porte, desenvolvido como Tech Challenge de pós-graduação em Arquitetura de Software.
+Evolução do MVP acadêmico da Fase 1 para a **Fase 2 do Tech Challenge de pós-graduação em Arquitetura de Software**, com foco em:
+
+- **Clean Code**: nomes claros, funções curtas e coesas, eliminação de duplicidade
+- **Clean Architecture**: separação em camadas Domain → Application → Infrastructure → Presentation, com regras de dependência estritas (domínio nunca depende de framework ou ORM)
+- **Testes automatizados**: cobertura dos fluxos críticos de negócio (abertura de OS, orçamento, aprovação/recusa, estoque, listagem)
+- **Novas APIs obrigatórias da Fase 2**:
+  - Abertura de OS retornando identificação única
+  - Consulta pública de status da OS
+  - Aprovação/recusa de orçamento via endpoint público (webhook de notificação externa)
+  - Listagem operacional de OS ordenada por prioridade de status, excluindo (logicamente) OS finalizadas/entregues
+  - **Atualização de status da OS via email** — notificação automática ao cliente quando o orçamento é gerado, com links de aprovação/recusa
 
 O sistema permite:
 - Gestão de clientes e veículos
 - Criação e acompanhamento de ordens de serviço (OS)
 - Inclusão de serviços e peças/insumos
-- Geração e aprovação de orçamentos
+- Geração e aprovação de orçamentos, com **notificação automática por email**
 - Controle de estoque
 - Autenticação JWT para rotas administrativas
 - Documentação completa via Swagger
@@ -126,6 +136,15 @@ Se o banco já tiver dados antigos e você quiser reiniciar do zero, crie um ban
 | `JWT_SECRET` | Chave secreta para tokens JWT | `oficina-mecanica-jwt-secret-dev` |
 | `JWT_EXPIRES_IN` | Tempo de expiração do token | `1d` |
 | `PORT` | Porta da aplicação | `3000` |
+| `APP_URL` | URL base usada para montar os links de aprovar/recusar orçamento no email | `http://localhost:3000` |
+| `SMTP_HOST` | Servidor SMTP para envio de email | `smtp.ethereal.email` |
+| `SMTP_PORT` | Porta do servidor SMTP | `587` |
+| `SMTP_USER` | Usuário de autenticação SMTP | *(vazio — gera conta de teste Ethereal automaticamente)* |
+| `SMTP_PASS` | Senha de autenticação SMTP | *(vazio — gera conta de teste Ethereal automaticamente)* |
+| `SMTP_FROM` | Endereço de email remetente (aceita `email@dominio.com` ou `Nome <email@dominio.com>`) | `noreply@oficina.com` |
+| `SMTP_TLS_REJECT_UNAUTHORIZED` | Validação de certificado TLS. Definir `false` apenas em redes corporativas com inspeção SSL — **nunca em produção** | `true` |
+
+> Ver seção 17 para detalhes completos da notificação por email.
 
 ## 8. Como Executar Migrations
 
@@ -492,3 +511,68 @@ curl -X POST http://localhost:3000/ordens-servico \
 ```bash
 curl http://localhost:3000/ordens-servico/<id>/status
 ```
+
+## 17. Notificação de Orçamento por Email (Atualização de Status — Fase 2)
+
+Requisito da Fase 2: *"Atualização de status da OS via alguma ferramenta como email."*
+
+### Como funciona
+
+```
+POST /ordens-servico/:id/gerar-orcamento
+        │
+        ▼
+ Orçamento calculado e persistido (status → AGUARDANDO_APROVACAO)
+        │
+        ▼
+ Email enviado automaticamente ao cliente com:
+   - Resumo da OS (número, veículo, valor total)
+   - Botão "Aprovar orçamento"  → POST /ordens-servico/:id/aprovar-orcamento (público)
+   - Botão "Recusar orçamento" → POST /ordens-servico/:id/recusar-orcamento  (público)
+        │
+        ▼
+ Cliente clica em um dos links → status da OS é atualizado automaticamente
+   Aprovado → EM_EXECUCAO (reserva peças em estoque)
+   Recusado → EM_DIAGNOSTICO
+```
+
+### Arquitetura (Clean Architecture aplicada)
+
+| Camada | Componente | Responsabilidade |
+|---|---|---|
+| Domain | `INotificacaoOrcamentoService` | Interface pura — define o contrato sem conhecer nodemailer/SMTP |
+| Application | `GerarOrcamentoUseCase` | Injeta a interface via `@Optional()` — funciona mesmo sem serviço de email configurado |
+| Infrastructure | `EmailNotificacaoOrcamentoService` | Implementação concreta com `nodemailer`, isolada do domínio |
+
+### Configuração
+
+**Desenvolvimento (sem configurar nada):** ao deixar `SMTP_USER`/`SMTP_PASS` vazios, o serviço cria automaticamente uma conta de teste no [Ethereal](https://ethereal.email) e imprime no log um link de preview do email enviado — nenhum email real é entregue, ideal para demonstração.
+
+```bash
+docker compose up -d --build
+docker logs oficina-app -f
+```
+
+Ao gerar um orçamento, o log mostra:
+```
+[EmailNotificacaoOrcamentoService] Nenhuma credencial SMTP configurada — conta de teste Ethereal criada automaticamente (xxxx@ethereal.email)
+[EmailNotificacaoOrcamentoService] Email de orçamento enviado para cliente@email.com | OS #3 | messageId: ...
+[EmailNotificacaoOrcamentoService] Preview do email (Ethereal): https://ethereal.email/message/xxxxx
+```
+
+**Produção / email real:** configure as variáveis SMTP com um provedor real (Gmail, SendGrid, Amazon SES, etc.):
+
+```bash
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=seuemail@gmail.com
+SMTP_PASS=senha-de-app          # Gmail exige "senha de app", não a senha da conta
+SMTP_FROM=seuemail@gmail.com    # aceita "email@dominio.com" ou "Nome <email@dominio.com>"
+APP_URL=https://sua-api-em-producao.com
+```
+
+> Em redes corporativas com inspeção SSL (antivírus/proxy que substitui o certificado do servidor), o handshake TLS pode falhar com `self-signed certificate in certificate chain`. Nesse caso, defina `SMTP_TLS_REJECT_UNAUTHORIZED=false` — **apenas em desenvolvimento, nunca em produção**.
+
+### Resiliência
+
+Se o serviço de notificação não estiver registrado no módulo (`@Optional()`), a geração do orçamento continua funcionando normalmente — o envio de email nunca bloqueia o fluxo principal de negócio. Se o cliente da OS não tiver email cadastrado, a notificação é apenas registrada como aviso no log, sem lançar exceção.
