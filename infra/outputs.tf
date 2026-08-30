@@ -23,4 +23,5 @@ output "database_url" {
   description = "URL de conexão completa do banco PostgreSQL (para uso no GitHub Secrets)"
   value       = "postgresql://${aws_db_instance.postgres_db.username}:${var.db_password}@${aws_db_instance.postgres_db.endpoint}/${aws_db_instance.postgres_db.db_name}?schema=public"
   sensitive   = true
-}
+}
+
