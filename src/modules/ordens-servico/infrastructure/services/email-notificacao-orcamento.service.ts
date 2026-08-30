@@ -77,7 +77,7 @@ export class EmailNotificacaoOrcamentoService
 
     const transporter = await this.getTransporter();
     const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || '"Oficina Mecânica" <noreply@oficina.com>',
+      from: this.montarRemetente(),
       to: emailCliente,
       subject: `[OS #${os.numero}] Orçamento pronto — aguardando sua aprovação`,
       html,
@@ -92,6 +92,22 @@ export class EmailNotificacaoOrcamentoService
     if (previewUrl) {
       this.logger.log(`Preview do email (Ethereal): ${previewUrl}`);
     }
+  }
+
+  /**
+   * Monta o remetente como objeto { name, address } — evita problemas de
+   * parsing quando o valor de SMTP_FROM vem apenas como email puro
+   * (ex.: "seuemail@gmail.com") ou já formatado ("Nome <email@dominio.com>").
+   */
+  private montarRemetente(): { name: string; address: string } {
+    const raw = (process.env.SMTP_FROM || 'noreply@oficina.com').trim();
+    const match = raw.match(/^"?([^"<]*)"?\s*<(.+)>$/);
+
+    if (match) {
+      return { name: match[1].trim() || 'Oficina Mecânica', address: match[2].trim() };
+    }
+
+    return { name: 'Oficina Mecânica', address: raw };
   }
 
   private montarHtmlOrcamento(

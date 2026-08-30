@@ -80,6 +80,36 @@ describe('EmailNotificacaoOrcamentoService', () => {
     expect(args.html).toContain('350.50');
   });
 
+  it('deve usar remetente padrão quando SMTP_FROM não está configurado', async () => {
+    delete process.env.SMTP_FROM;
+    const serviceComFromPadrao = new EmailNotificacaoOrcamentoService();
+
+    await serviceComFromPadrao.notificarOrcamentoPendente(makeOS('joao@test.com'), 100);
+
+    const args = mockSendMail.mock.calls[0][0];
+    expect(args.from).toEqual({ name: 'Oficina Mecânica', address: 'noreply@oficina.com' });
+  });
+
+  it('deve montar remetente corretamente quando SMTP_FROM é um email puro (sem aspas/nome)', async () => {
+    process.env.SMTP_FROM = 'meuemail@gmail.com';
+    const serviceComEmailPuro = new EmailNotificacaoOrcamentoService();
+
+    await serviceComEmailPuro.notificarOrcamentoPendente(makeOS('joao@test.com'), 100);
+
+    const args = mockSendMail.mock.calls[0][0];
+    expect(args.from).toEqual({ name: 'Oficina Mecânica', address: 'meuemail@gmail.com' });
+  });
+
+  it('deve montar remetente corretamente quando SMTP_FROM tem nome e email formatados', async () => {
+    process.env.SMTP_FROM = 'Minha Oficina <contato@minhaoficina.com>';
+    const serviceComNomeEEmail = new EmailNotificacaoOrcamentoService();
+
+    await serviceComNomeEEmail.notificarOrcamentoPendente(makeOS('joao@test.com'), 100);
+
+    const args = mockSendMail.mock.calls[0][0];
+    expect(args.from).toEqual({ name: 'Minha Oficina', address: 'contato@minhaoficina.com' });
+  });
+
   it('deve ignorar envio quando cliente não tem email cadastrado', async () => {
     await service.notificarOrcamentoPendente(makeOS(undefined), 100);
 
