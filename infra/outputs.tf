@@ -24,4 +24,3 @@ output "database_url" {
   value       = "postgresql://${aws_db_instance.postgres_db.username}:${var.db_password}@${aws_db_instance.postgres_db.endpoint}/${aws_db_instance.postgres_db.db_name}?schema=public"
   sensitive   = true
 }
-
