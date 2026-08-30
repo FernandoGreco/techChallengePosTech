@@ -8,17 +8,51 @@ export class EmailNotificacaoOrcamentoService
   implements INotificacaoOrcamentoService
 {
   private readonly logger = new Logger(EmailNotificacaoOrcamentoService.name);
-  private transporter: nodemailer.Transporter;
+  private transporterPromise: Promise<nodemailer.Transporter> | null = null;
 
-  constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-      port: Number(process.env.SMTP_PORT) || 587,
+  /**
+   * Cria o transporter sob demanda (lazy). Se SMTP_USER/SMTP_PASS não estiverem
+   * configurados, gera automaticamente uma conta de teste no Ethereal
+   * (https://ethereal.email) — útil para desenvolvimento local sem precisar
+   * de credenciais reais de SMTP.
+   */
+  private async getTransporter(): Promise<nodemailer.Transporter> {
+    if (!this.transporterPromise) {
+      this.transporterPromise = this.criarTransporter();
+    }
+    return this.transporterPromise;
+  }
+
+  private async criarTransporter(): Promise<nodemailer.Transporter> {
+    let host = process.env.SMTP_HOST || 'smtp.ethereal.email';
+    let port = Number(process.env.SMTP_PORT) || 587;
+    let user = process.env.SMTP_USER || '';
+    let pass = process.env.SMTP_PASS || '';
+
+    if (!user || !pass) {
+      const testAccount = await nodemailer.createTestAccount();
+      host = testAccount.smtp.host;
+      port = testAccount.smtp.port;
+      user = testAccount.user;
+      pass = testAccount.pass;
+      this.logger.log(
+        `Nenhuma credencial SMTP configurada — conta de teste Ethereal criada automaticamente (${user})`,
+      );
+    }
+
+    // Em redes corporativas com inspeção SSL (antivírus/proxy), a cadeia de
+    // certificado pode ser substituída por um certificado self-signed, causando
+    // falha de handshake TLS. SMTP_TLS_REJECT_UNAUTHORIZED=false contorna isso
+    // apenas em ambiente de desenvolvimento — nunca desabilitar em produção.
+    const rejectUnauthorized =
+      process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false';
+
+    return nodemailer.createTransport({
+      host,
+      port,
       secure: false,
-      auth: {
-        user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || '',
-      },
+      auth: { user, pass },
+      tls: { rejectUnauthorized },
     });
   }
 
@@ -41,7 +75,8 @@ export class EmailNotificacaoOrcamentoService
 
     const html = this.montarHtmlOrcamento(os, valorTotal, urlAprovar, urlRecusar);
 
-    const info = await this.transporter.sendMail({
+    const transporter = await this.getTransporter();
+    const info = await transporter.sendMail({
       from: process.env.SMTP_FROM || '"Oficina Mecânica" <noreply@oficina.com>',
       to: emailCliente,
       subject: `[OS #${os.numero}] Orçamento pronto — aguardando sua aprovação`,

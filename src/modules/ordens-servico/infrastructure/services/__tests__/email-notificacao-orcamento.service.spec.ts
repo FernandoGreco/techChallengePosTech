@@ -33,15 +33,26 @@ describe('EmailNotificacaoOrcamentoService', () => {
   let service: EmailNotificacaoOrcamentoService;
   let mockSendMail: jest.Mock;
   let mockCreateTransport: jest.Mock;
+  const originalEnv = process.env;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env = {
+      ...originalEnv,
+      SMTP_HOST: 'smtp.test.com',
+      SMTP_USER: 'test-user',
+      SMTP_PASS: 'test-pass',
+    };
 
     mockSendMail = jest.fn().mockResolvedValue({ messageId: 'test-id-123' });
     mockCreateTransport = nodemailer.createTransport as jest.Mock;
     mockCreateTransport.mockReturnValue({ sendMail: mockSendMail });
 
     service = new EmailNotificacaoOrcamentoService();
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
   });
 
   it('deve enviar email com subject e destinatário corretos', async () => {
@@ -82,5 +93,45 @@ describe('EmailNotificacaoOrcamentoService', () => {
     await service.notificarOrcamentoPendente(os, 100);
 
     expect(mockSendMail).not.toHaveBeenCalled();
+  });
+
+  it('deve criar conta de teste Ethereal automaticamente quando SMTP_USER/PASS não configurados', async () => {
+    process.env.SMTP_USER = '';
+    process.env.SMTP_PASS = '';
+    const mockCreateTestAccount = nodemailer.createTestAccount as jest.Mock;
+    mockCreateTestAccount.mockResolvedValue({
+      user: 'ethereal-user',
+      pass: 'ethereal-pass',
+      smtp: { host: 'smtp.ethereal.email', port: 587 },
+    });
+
+    const serviceSemCredenciais = new EmailNotificacaoOrcamentoService();
+    await serviceSemCredenciais.notificarOrcamentoPendente(makeOS('joao@test.com'), 100);
+
+    expect(mockCreateTestAccount).toHaveBeenCalledTimes(1);
+    expect(mockCreateTransport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        auth: { user: 'ethereal-user', pass: 'ethereal-pass' },
+      }),
+    );
+  });
+
+  it('deve reutilizar o mesmo transporter em chamadas subsequentes (lazy singleton)', async () => {
+    await service.notificarOrcamentoPendente(makeOS('joao@test.com'), 100);
+    await service.notificarOrcamentoPendente(makeOS('maria@test.com'), 200);
+
+    expect(mockCreateTransport).toHaveBeenCalledTimes(1);
+    expect(mockSendMail).toHaveBeenCalledTimes(2);
+  });
+
+  it('deve permitir desabilitar validação de certificado TLS via env var (redes corporativas)', async () => {
+    process.env.SMTP_TLS_REJECT_UNAUTHORIZED = 'false';
+
+    const serviceComTlsFlexivel = new EmailNotificacaoOrcamentoService();
+    await serviceComTlsFlexivel.notificarOrcamentoPendente(makeOS('joao@test.com'), 100);
+
+    expect(mockCreateTransport).toHaveBeenCalledWith(
+      expect.objectContaining({ tls: { rejectUnauthorized: false } }),
+    );
   });
 });
