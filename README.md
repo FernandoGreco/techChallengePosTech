@@ -23,16 +23,164 @@ O sistema permite:
 - Autenticação JWT para rotas administrativas
 - Documentação completa via Swagger
 
+## 2. Desenho da Arquitetura Proposta
+
+### 2.1 Componentes da Aplicação
+
+A API é um **monólito modular** em NestJS, organizado em camadas de Clean Architecture por módulo de domínio.
+
+```mermaid
+flowchart TB
+    subgraph Client["Cliente / Consumidor da API"]
+        SW["Swagger UI"]
+        EXT["Sistema externo<br/>(clique no email de aprovação/recusa)"]
+    end
+
+    subgraph API["API NestJS — Monólito Modular"]
+        direction TB
+        GUARD["JwtAuthGuard + @Public()"]
+
+        subgraph Modules["Módulos de Domínio"]
+            AUTH["auth"]
+            CLI["clientes"]
+            VEI["veiculos"]
+            SERV["servicos"]
+            PEC["pecas"]
+            OS["ordens-servico"]
+            ORC["orcamentos"]
+            REL["relatorios"]
+        end
+
+        subgraph Layers["Camadas (Clean Architecture) — por módulo"]
+            PRES["Presentation<br/>Controllers + DTOs"]
+            APP["Application<br/>Use Cases"]
+            DOM["Domain<br/>Entities, Rules, Interfaces"]
+            INFRA["Infrastructure<br/>Repositories Prisma + EmailService"]
+        end
+
+        PRES --> APP --> DOM
+        INFRA -.implementa interface.-> DOM
+    end
+
+    subgraph Data["Persistência"]
+        PG[("PostgreSQL")]
+    end
+
+    subgraph Notif["Notificação"]
+        SMTP["Servidor SMTP<br/>(Ethereal / Gmail / SES)"]
+    end
+
+    SW -->|HTTPS| GUARD --> Modules
+    EXT -->|POST aprovar/recusar orçamento| GUARD
+    Modules --> PRES
+    INFRA -->|Prisma Client| PG
+    INFRA -->|Nodemailer| SMTP
+    SMTP -.email com links.-> EXT
+```
+
+### 2.2 Infraestrutura Provisionada
+
+Infraestrutura como Código via **Terraform**, provisionando os recursos na **AWS**. Manifestos de **Kubernetes** também são mantidos no repositório (`/k8s`) para orquestração com auto-scaling (HPA), validados no pipeline de CI.
+
+```mermaid
+flowchart TB
+    subgraph GH["GitHub"]
+        REPO["Repositório"]
+        GHCR["GitHub Container Registry<br/>(imagem Docker)"]
+    end
+
+    subgraph AWS["AWS (provisionado via Terraform)"]
+        subgraph Compute["Compute"]
+            EC2["EC2 t3.medium<br/>Docker Engine<br/>Security Group: 22 (SSH), 3000 (API)"]
+        end
+        subgraph DB["Banco de Dados"]
+            RDS[("RDS PostgreSQL 16<br/>db.t3.micro")]
+        end
+        subgraph Storage["Armazenamento"]
+            S3["S3 Bucket<br/>(anexos/uploads da OS)"]
+        end
+        subgraph State["Estado do Terraform"]
+            TFS3["S3 Bucket<br/>(tfstate remoto)"]
+        end
+    end
+
+    subgraph K8s["Kubernetes (manifestos /k8s — orquestração alternativa)"]
+        NS["Namespace: oficina"]
+        DEPL["Deployment<br/>2 réplicas"]
+        SVC["Service<br/>ClusterIP :3000"]
+        HPA["HPA<br/>2-6 réplicas @ 70% CPU"]
+        CM["ConfigMap"]
+        SEC["Secret"]
+        PGK8S["Postgres<br/>Deployment + PVC + Service"]
+        NS --> DEPL --> SVC
+        HPA -.escala.-> DEPL
+        CM & SEC -.env vars.-> DEPL
+        DEPL -.conecta.-> PGK8S
+    end
+
+    REPO -->|build| GHCR
+    GHCR -->|docker pull| EC2
+    EC2 -->|DATABASE_URL| RDS
+    EC2 -.uploads.-> S3
+    REPO -.terraform apply.-> AWS
+```
+
+### 2.3 Fluxo de Deploy (CI/CD)
+
+Pipeline em **GitHub Actions**, disparado em push para `main`, `develop` e `feature/*`.
+
+```mermaid
+flowchart LR
+    subgraph CI["1. Continuous Integration"]
+        direction TB
+        C1["Checkout + Node 20"]
+        C2["npm ci + prisma generate"]
+        C3["ESLint"]
+        C4["Jest — unitários + cobertura"]
+        C5["E2E — Postgres efêmero"]
+        C6["Build TypeScript"]
+        C7["docker build (validação)"]
+        C1-->C2-->C3-->C4-->C5-->C6-->C7
+    end
+
+    subgraph CD["2. Continuous Delivery"]
+        direction TB
+        D1["Build imagem Docker"]
+        D2["Push para GHCR<br/>tags: sha, branch, latest/dev"]
+        D3["Validar manifestos K8s (/k8s)"]
+        D1-->D2-->D3
+    end
+
+    subgraph Deploy["3. Deploy AWS — apenas branch main"]
+        direction TB
+        E1["Terraform init<br/>(backend S3 remoto)"]
+        E2["Terraform import<br/>(evita recursos duplicados)"]
+        E3["Terraform apply<br/>(EC2 + RDS + S3 + SG)"]
+        E4["Capturar outputs<br/>(IP EC2, endpoint RDS)"]
+        E5["SSH na EC2:<br/>docker pull + docker run"]
+        E1-->E2-->E3-->E4-->E5
+    end
+
+    CI -->|todas as branches| CD
+    CD -->|somente main| Deploy
+```
+
+**Resumo do fluxo:**
+1. Desenvolvedor faz push/PR → CI roda lint, testes unitários, cobertura, testes E2E (com Postgres efêmero) e build
+2. Se CI passa, CD constrói a imagem Docker e publica no GHCR com tags (`latest` para `main`, `dev` para `develop`)
+3. Manifestos Kubernetes são validados sintaticamente no pipeline
+4. Apenas em push para `main`: Terraform provisiona/atualiza a infraestrutura AWS (idempotente via `terraform import`) e a nova imagem é implantada via SSH na instância EC2
 
 
-## 2. Tecnologias Utilizadas e Justificativas
+
+## 3. Tecnologias Utilizadas e Justificativas
 
 | Tecnologia | Versão | Por que foi escolhida |
 |---|---|---|
 | **Node.js** | 20.x LTS | Runtime JavaScript maduro com suporte a I/O assíncrono não-bloqueante — ideal para APIs REST que realizam muitas operações de banco em paralelo (transactions, includes). A equipe já domina o ecossistema Node por trabalhar com Angular no frontend, reduzindo a curva de aprendizado e permitindo compartilhar padrões e ferramentas entre back e front |
 | **TypeScript** | 5.x | Tipagem estática elimina erros em tempo de desenvolvimento, é obrigatório no ecossistema NestJS e facilita o contrato entre camadas (domain ↔ application ↔ infra) sem casting em tempo de execução. Por ser a linguagem que toda a equipe já tem fluência, acelerando o desenvolvimento e o code review |
 | **NestJS** | 11.x | Framework opinativo com suporte nativo a injeção de dependência, módulos, guards e decorators — permite separar camadas de forma declarativa sem boilerplate. Alinhado com a arquitetura hexagonal/Clean Architecture pela facilidade de registrar implementações por token (`useClass`) |
-| **PostgreSQL** | 16 | Banco relacional com transações ACID, integridade referencial via FK e suporte a JSON — necessário para o domínio complexo com múltiplas relações (OS → Orçamentos → Histórico). Ver seção 14 para análise detalhada |
+| **PostgreSQL** | 16 | Banco relacional com transações ACID, integridade referencial via FK e suporte a JSON — necessário para o domínio complexo com múltiplas relações (OS → Orçamentos → Histórico). Ver seção 15 para análise detalhada |
 | **Prisma ORM** | 5.x | Gera tipos TypeScript automaticamente a partir do schema, simplifica migrations e oferece query builder type-safe. Isolado na camada de infra — use cases dependem de interfaces, não do Prisma diretamente |
 | **JWT** (`@nestjs/jwt`) | 11.x | Stateless, sem necessidade de session store no servidor. Payload carrega `sub`, `email` e `papel`, eliminando roundtrip ao banco para autorização |
 | **bcryptjs** | 3.x | Hash de senhas com salt adaptativo (fator de custo configurável). Resistente a ataques de rainbow table e força bruta |
@@ -43,7 +191,7 @@ O sistema permite:
 | **Docker / Docker Compose** | - | Garante ambiente reproduzível entre dev, CI e produção. `docker compose up` sobe API + PostgreSQL em um comando |
 | **ESLint + Prettier** | - | Lint e formatação automática garantem consistência de estilo e evitam debates de formatação em code review |
 
-## 3. Arquitetura
+## 4. Arquitetura
 
 O projeto segue a arquitetura de **monolito modular** com conceitos de **Domain-Driven Design (DDD)** aplicados.
 
@@ -53,7 +201,7 @@ O projeto segue a arquitetura de **monolito modular** com conceitos de **Domain-
 - **Infrastructure**: Implementações de repositórios com Prisma
 - **Presentation**: Controllers REST
 
-## 4. Estrutura de Pastas
+## 5. Estrutura de Pastas
 
 ```
 src/
@@ -89,7 +237,7 @@ src/
 └── main.ts
 ```
 
-## 5. Como Rodar com Docker
+## 6. Como Rodar com Docker
 
 ```bash
 # Clonar o repositório
@@ -104,7 +252,7 @@ docker compose up --build
 # Swagger: http://localhost:3000/api/docs
 ```
 
-## 6. Como Rodar Localmente (sem Docker)
+## 7. Como Rodar Localmente (sem Docker)
 
 ### Pré-requisitos
 - Node.js 20+ LTS (22 LTS recomendado)
@@ -130,7 +278,7 @@ Observação: a aplicação lê as variáveis de ambiente do terminal atual. Se 
 
 Se o banco já tiver dados antigos e você quiser reiniciar do zero, crie um banco novo ou limpe o schema antes de rodar a migration e o seed.
 
-## 7. Variáveis de Ambiente
+## 8. Variáveis de Ambiente
 
 | Variável | Descrição | Valor padrão |
 |---|---|---|
@@ -146,9 +294,9 @@ Se o banco já tiver dados antigos e você quiser reiniciar do zero, crie um ban
 | `SMTP_FROM` | Endereço de email remetente (aceita `email@dominio.com` ou `Nome <email@dominio.com>`) | `noreply@oficina.com` |
 | `SMTP_TLS_REJECT_UNAUTHORIZED` | Validação de certificado TLS. Definir `false` apenas em redes corporativas com inspeção SSL — **nunca em produção** | `true` |
 
-> Ver seção 17 para detalhes completos da notificação por email.
+> Ver seção 18 para detalhes completos da notificação por email.
 
-## 8. Como Executar Migrations
+## 9. Como Executar Migrations
 
 ```bash
 # Criar e aplicar migrations
@@ -158,7 +306,7 @@ npx prisma migrate dev --name init
 npx prisma migrate deploy
 ```
 
-## 9. Como Rodar Seed
+## 10. Como Rodar Seed
 
 ```bash
 npm run prisma:seed
@@ -173,7 +321,7 @@ O seed cria:
 - 1 cliente de exemplo
 - 1 veículo de exemplo
 
-## 10. Como Executar Testes
+## 11. Como Executar Testes
 
 ```bash
 # Testes unitários
@@ -258,7 +406,7 @@ it('deve lançar BusinessException quando estoque insuficiente', async () => {
 });
 ```
 
-## 11. Como Acessar o Swagger
+## 12. Como Acessar o Swagger
 
 Após iniciar a aplicação, acesse:
 
@@ -272,7 +420,7 @@ Para autenticar no Swagger:
 3. Clique em "Authorize" no topo do Swagger
 4. Cole o token no campo "Value"
 
-## 12. Usuário Admin de Teste
+## 13. Usuário Admin de Teste
 
 | Campo | Valor |
 |---|---|
@@ -280,7 +428,7 @@ Para autenticar no Swagger:
 | Senha | `123456` |
 | Papel | `ADMIN` |
 
-## 13. Principais Endpoints
+## 14. Principais Endpoints
 
 
 ### Autenticação
@@ -352,7 +500,7 @@ Para autenticar no Swagger:
 |---|---|---|
 | GET | `/relatorios/tempo-medio-servicos` | Tempo médio de execução |
 
-## 14. Decisões Técnicas
+## 15. Decisões Técnicas
 
 ### ADR-01 — Banco de Dados: PostgreSQL
 
@@ -449,7 +597,7 @@ O monolito modular foi escolhido por:
 - **Repositório como abstração**: interfaces definem contratos, implementações usam Prisma
 - **Casos de uso**: orquestram o fluxo da aplicação sem misturar com a camada de apresentação
 
-## 15. Regras de Negócio Principais
+## 16. Regras de Negócio Principais
 
 ### Status da Ordem de Serviço (Máquina de Estados)
 ```
@@ -473,7 +621,7 @@ RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → EM_EXECUCAO → FINALIZ
 12. Rotas administrativas protegidas por JWT
 13. Rotas públicas: consulta de status, aprovação e recusa de orçamento
 
-## 16. Exemplos de Requests
+## 17. Exemplos de Requests
 
 ### Login
 ```bash
@@ -514,7 +662,7 @@ curl -X POST http://localhost:3000/ordens-servico \
 curl http://localhost:3000/ordens-servico/<id>/status
 ```
 
-## 17. Notificação de Orçamento por Email (Atualização de Status — Fase 2)
+## 18. Notificação de Orçamento por Email (Atualização de Status — Fase 2)
 
 Requisito da Fase 2: *"Atualização de status da OS via alguma ferramenta como email."*
 
