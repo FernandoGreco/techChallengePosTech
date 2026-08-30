@@ -2,8 +2,7 @@ terraform {
   required_version = ">= 1.0"
 
   # Backend S3 para persistir o estado do Terraform na esteira CI/CD
-  # A configuração do bucket é passada via -backend-config no GitHub Actions
-  # Para uso local, rode: terraform init -backend=false
+  # A configuracao do bucket e passada via -backend-config no GitHub Actions
   backend "s3" {}
 
   required_providers {

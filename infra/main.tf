@@ -18,7 +18,7 @@ resource "aws_security_group" "rds_sg" {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Libera acesso na porta 5432
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -45,7 +45,7 @@ resource "aws_db_instance" "postgres_db" {
   password               = var.db_password
   skip_final_snapshot    = true
   publicly_accessible    = true
-  vpc_security_group_ids = [aws_security_group.rds_sg.id] # ⬅️ Vincula o Security Group do RDS
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
   tags = {
     Name = "OficinaMecanicaRDS"
@@ -83,7 +83,7 @@ resource "aws_security_group" "app_sg" {
   }
 }
 
-# 5. Chave SSH gerada automaticamente para acesso à instância EC2
+# 5. Chave SSH gerada automaticamente para acesso a instancia EC2
 resource "tls_private_key" "app_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -94,7 +94,7 @@ resource "aws_key_pair" "app_key_pair" {
   public_key = tls_private_key.app_key.public_key_openssh
 }
 
-# 6. Servidor/Instância EC2 para rodar a Aplicação / Kubernetes
+# 6. Servidor/Instancia EC2 para rodar a Aplicacao
 resource "aws_instance" "app_server" {
   ami                         = "ami-0c7217cdde317cfec"
   instance_type               = "t3.medium"
@@ -102,15 +102,14 @@ resource "aws_instance" "app_server" {
   vpc_security_group_ids      = [aws_security_group.app_sg.id]
   key_name                    = aws_key_pair.app_key_pair.key_name
 
-  # Instalação automática do Docker na inicialização da máquina
   user_data = <<-EOF
-              #!/bin/bash
-              apt-get update -y
-              apt-get install -y docker.io
-              systemctl start docker
-              systemctl enable docker
-              usermod -aG docker ubuntu
-              EOF
+    #!/bin/bash
+    apt-get update -y
+    apt-get install -y docker.io
+    systemctl start docker
+    systemctl enable docker
+    usermod -aG docker ubuntu
+  EOF
 
   tags = {
     Name = "OficinaMecanicaServer"
