@@ -201,10 +201,74 @@ jobs:
             -backend-config="region=$AWS_REGION"
           echo "✅ Terraform inicializado!"
 
-      - name: "🏗️ [Deploy 5/7] Provisionar infraestrutura na AWS (Terraform Apply)"
+      - name: "🔍 [Deploy 5a/7] Importar recursos existentes na AWS (evitar duplicatas)"
         working-directory: infra
         run: |
-          echo "🏗️ Provisionando recursos na AWS (EC2, RDS, S3, SSH Key)..."
+          echo "🔍 Verificando recursos existentes na AWS e importando para o estado do Terraform..."
+
+          # Importar bucket S3 se ja existir
+          BUCKET_NAME="techchallenge-oficina-mecanica-storage-2026"
+          if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+            echo "📦 Bucket S3 ja existe - importando..."
+            terraform import aws_s3_bucket.oficina_storage "$BUCKET_NAME" 2>/dev/null || echo "   (ja no estado)"
+          fi
+
+          # Importar Security Group do RDS se ja existir
+          SG_RDS_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=oficina_rds_sg" \
+            --query "SecurityGroups[0].GroupId" \
+            --output text 2>/dev/null)
+          if [ "$SG_RDS_ID" != "None" ] && [ -n "$SG_RDS_ID" ]; then
+            echo "🔒 Security Group RDS ja existe ($SG_RDS_ID) - importando..."
+            terraform import aws_security_group.rds_sg "$SG_RDS_ID" 2>/dev/null || echo "   (ja no estado)"
+          fi
+
+          # Importar Security Group da App se ja existir
+          SG_APP_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=oficina_app_sg" \
+            --query "SecurityGroups[0].GroupId" \
+            --output text 2>/dev/null)
+          if [ "$SG_APP_ID" != "None" ] && [ -n "$SG_APP_ID" ]; then
+            echo "🔒 Security Group App ja existe ($SG_APP_ID) - importando..."
+            terraform import aws_security_group.app_sg "$SG_APP_ID" 2>/dev/null || echo "   (ja no estado)"
+          fi
+
+          # Importar Key Pair se ja existir
+          KEY_EXISTS=$(aws ec2 describe-key-pairs \
+            --key-names "oficina-mecanica-key" \
+            --query "KeyPairs[0].KeyName" \
+            --output text 2>/dev/null)
+          if [ "$KEY_EXISTS" = "oficina-mecanica-key" ]; then
+            echo "🔑 Key Pair ja existe - importando..."
+            terraform import aws_key_pair.app_key_pair "oficina-mecanica-key" 2>/dev/null || echo "   (ja no estado)"
+          fi
+
+          # Importar instancia EC2 se ja existir
+          EC2_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=OficinaMecanicaServer" "Name=instance-state-name,Values=running,pending,stopped" \
+            --query "Reservations[0].Instances[0].InstanceId" \
+            --output text 2>/dev/null)
+          if [ "$EC2_ID" != "None" ] && [ -n "$EC2_ID" ]; then
+            echo "🖥️ EC2 ja existe ($EC2_ID) - importando..."
+            terraform import aws_instance.app_server "$EC2_ID" 2>/dev/null || echo "   (ja no estado)"
+          fi
+
+          # Importar RDS se ja existir
+          RDS_EXISTS=$(aws rds describe-db-instances \
+            --db-instance-identifier "oficina-mecanica" \
+            --query "DBInstances[0].DBInstanceIdentifier" \
+            --output text 2>/dev/null)
+          if [ "$RDS_EXISTS" = "oficina-mecanica" ]; then
+            echo "🗄️ RDS ja existe - importando..."
+            terraform import aws_db_instance.postgres_db "oficina-mecanica" 2>/dev/null || echo "   (ja no estado)"
+          fi
+
+          echo "✅ Verificacao e importacao concluidas!"
+
+      - name: "🏗️ [Deploy 5b/7] Provisionar infraestrutura na AWS (Terraform Apply)"
+        working-directory: infra
+        run: |
+          echo "🏗️ Aplicando configuracao da infraestrutura na AWS..."
           terraform apply -auto-approve
           echo "✅ Infraestrutura provisionada!"
           echo "📍 IP: $(terraform output -raw server_public_ip)"
