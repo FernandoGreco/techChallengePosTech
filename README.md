@@ -600,47 +600,76 @@ curl -X POST http://localhost:3000/ordens-servico \
 curl http://localhost:3000/ordens-servico/<id>/status
 ```
 
-## 18. Provisionamento de Infraestrutura com Terraform (`/infra`)
+## 18. Arquitetura Cloud AWS & Terraform (`/infra`)
 
-Os arquivos de infraestrutura como código (IaC) estão armazenados na pasta `/infra`.
+Os arquivos de infraestrutura como código (IaC) estão armazenados na pasta `/infra` e são gerenciados via **Terraform**. O estado do Terraform é armazenado remotamente em um bucket S3 para garantir a consistência na esteira.
+
+### Diagrama de Arquitetura AWS
+
+```mermaid
+graph TD
+    User((Usuário / Cliente)) -->|HTTP/REST| EC2[EC2 Instance\n- Docker\n- API Node.js]
+    
+    subgraph "AWS Cloud - Região us-east-1"
+        EC2 -->|Conexão TCP/5432| RDS[(Amazon RDS\nPostgreSQL 16)]
+        EC2 -.->|Uploads Futuros| S3[Amazon S3\nBucket Storage]
+        
+        subgraph "Segurança"
+            SG_APP[Security Group App\nLiberado: 22, 3000] -.-> EC2
+            SG_RDS[Security Group RDS\nLiberado: 5432] -.-> RDS
+        end
+    end
+    
+    GitHub[GitHub Actions\nCI/CD Pipeline] -->|SSH/Deploy| EC2
+    GitHub -->|Terraform Apply| SG_APP
+```
 
 ### Recursos Provisionados
-- **VPC**: Rede virtual isolada para a infraestrutura do projeto.
-- **Subnets**: Sub-redes públicas e privadas.
-- **Internet Gateway**: Roteamento de tráfego para acesso à internet.
+- **Instância EC2 (t3.medium)**: Servidor de aplicação rodando Docker.
+- **RDS PostgreSQL (db.t3.micro)**: Banco de dados relacional gerenciado.
+- **S3 Bucket**: Armazenamento para uploads e arquivos.
+- **Security Groups**: Controle estrito de tráfego de rede (SSH, API, DB).
+- **SSH Key Pair**: Autenticação segura na máquina virtual.
 
-### Executando o Terraform
-
+### Executando o Terraform (Local - Opcional)
+A esteira gerencia a infraestrutura, mas caso precise rodar localmente:
 ```bash
 cd infra
-
-# Inicializar os provedores e módulos
-terraform init
-
-# Validar os arquivos de configuração
-terraform validate
-
-# Visualizar o plano de execução
+terraform init -backend=false
 terraform plan
-
-# Aplicar e criar a infraestrutura na cloud
 terraform apply
 ```
 
 ## 19. Esteira de CI/CD (GitHub Actions)
 
-A pipeline de Integração e Entrega Contínua (CI/CD) foi configurada via GitHub Actions no arquivo `.github/workflows/ci-cd.yml`.
+A pipeline de Integração, Entrega e Deploy Contínuo foi configurada no arquivo `.github/workflows/ci-cd.yml` e automatiza todo o ciclo de vida do software.
 
-### Fluxo da Esteira
-1. **Continuous Integration (CI)**:
+### Fluxo da Esteira (3 Estágios)
+
+```mermaid
+flowchart LR
+    A[Push / PR] --> B(1. CI: Testes & Build)
+    B -->|Sucesso| C(2. CD: Imagem Docker GHCR)
+    C -->|Sucesso (Apenas main)| D(3. Deploy: Terraform + SSH)
+```
+
+1. **Integração Contínua (CI)**:
    - Disparado em todo `push` ou `Pull Request` para as branches `main` e `develop`.
-   - Sobe banco PostgreSQL em container de teste.
-   - Executa Linter (`npm run lint`), Testes Unitários (`npm run test`), Cobertura (`npm run test:cov`) e Testes E2E (`npm run test:e2e`).
-   - Valida a compilação TypeScript (`npm run build`) e o build da Imagem Docker.
-2. **Continuous Deployment (CD)**:
-   - Disparado no `push` para a branch `main`.
-   - Gera a imagem Docker otimizada e faz o push para o **GitHub Container Registry (GHCR)** com a tag `latest` e o SHA do commit.
+   - Sobe um PostgreSQL efêmero (Service Container).
+   - Executa Linter, Testes Unitários (`npm run test`), Cobertura (`npm run test:cov`) e Testes E2E (`npm run test:e2e`).
+   - Valida compilação TypeScript e construção da Imagem Docker.
+
+2. **Entrega Contínua (CD)**:
+   - Disparado no `push` para `main` e `develop`.
+   - Autentica no GitHub Container Registry (GHCR).
+   - Gera a imagem Docker otimizada e faz o push para o registro (`ghcr.io`).
    - Valida a sintaxe dos manifestos Kubernetes (`/k8s`).
+
+3. **Infraestrutura e Deploy (Deploy)**:
+   - Disparado no `push` para `main` (Produção).
+   - Verifica, inicializa e roda o **Terraform** para garantir que a infraestrutura AWS (EC2, RDS, S3) esteja provisionada e atualizada.
+   - Captura os outputs dinâmicos da AWS (IP da EC2, credenciais RDS).
+   - Conecta via SSH na instância EC2, faz o login no GHCR, baixa a nova imagem e reinicia a API com zero intervenção manual.
 
 ## 20. Entregáveis da Fase 2
 
