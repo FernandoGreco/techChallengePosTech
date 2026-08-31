@@ -1078,5 +1078,6 @@ flowchart LR
 - **Manifestos Kubernetes**: `/k8s`
 - **Scripts Terraform**: `/infra`
 - **Pipeline CI/CD**: `.github/workflows/ci-cd.yml`
-- **Documentação de APIs (Swagger)**: `http://localhost:3000/api/docs` (ou coleção exportada em `/test/collection.json`)
-- **Vídeo Demonstrativo da Fase 2**: [Link do Vídeo no YouTube/Vimeo](https://youtube.com) *(substituir pelo link oficial de até 15 min)*
+- **Documentação de APIs (Swagger)**: `http://localhost:3000/api/docs` — especificação OpenAPI (JSON) disponível em `http://localhost:3000/api-json`, importável diretamente no Postman via *Import → Link*
+- **Collection Postman**: `[LINK-A-PREENCHER]` *(exportar a collection publicada e colar o link aqui antes da entrega)*
+- **Vídeo Demonstrativo da Fase 2**: `[LINK-A-PREENCHER]` *(publicar no YouTube/Vimeo, até 15 min, e colar o link aqui antes da entrega)*
