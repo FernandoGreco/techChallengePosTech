@@ -527,7 +527,27 @@ kubectl delete namespace oficina
 
 ## 10. Provisionamento de Infraestrutura com Terraform (`/infra`)
 
-Os arquivos de infraestrutura como código (IaC) estão armazenados na pasta `/infra`.
+Os arquivos de infraestrutura como código (IaC) estão armazenados na pasta `/infra` e são gerenciados via **Terraform**. O estado é armazenado remotamente em um bucket S3 para garantir consistência entre execuções da esteira.
+
+### Diagrama de Arquitetura AWS
+
+```mermaid
+flowchart TB
+    User(["Usuário / Cliente"]) -->|HTTP/REST| EC2["EC2 Instance<br/>Docker + API Node.js"]
+
+    subgraph AWS["AWS Cloud — us-east-1"]
+        EC2 -->|"Conexão TCP :5432"| RDS[("RDS PostgreSQL 16")]
+        EC2 -.->|"uploads futuros"| S3["S3 Bucket<br/>Storage"]
+
+        subgraph Seguranca["Segurança"]
+            SG_APP["Security Group App<br/>Liberado: 22, 3000"] -.-> EC2
+            SG_RDS["Security Group RDS<br/>Liberado: 5432"] -.-> RDS
+        end
+    end
+
+    GitHub["GitHub Actions<br/>CI/CD Pipeline"] -->|"SSH / Deploy"| EC2
+    GitHub -->|"Terraform Apply"| AWS
+```
 
 ### Recursos Provisionados
 - **VPC**: rede virtual isolada para a infraestrutura do projeto (`vpc.tf`)
@@ -559,6 +579,8 @@ terraform apply
 # Consultar outputs (IP da EC2, endpoint do RDS)
 terraform output
 ```
+
+> **Iteração local rápida:** se quiser apenas validar mudanças sem usar o backend remoto em S3 (ex.: sem credenciais AWS configuradas), rode `terraform init -backend=false` no lugar do `init` padrão.
 
 > Em produção, o pipeline de CI/CD (seção 21) executa esses mesmos comandos automaticamente, com backend remoto de estado em S3 e importação de recursos já existentes para evitar duplicação.
 
@@ -936,47 +958,7 @@ curl -X POST http://localhost:3000/ordens-servico \
 curl http://localhost:3000/ordens-servico/<id>/status
 ```
 
-## 20. Arquitetura Cloud AWS & Terraform (`/infra`)
-
-Os arquivos de infraestrutura como código (IaC) estão armazenados na pasta `/infra` e são gerenciados via **Terraform**. O estado do Terraform é armazenado remotamente em um bucket S3 para garantir a consistência na esteira.
-
-### Diagrama de Arquitetura AWS
-
-```mermaid
-graph TD
-    User((Usuário / Cliente)) -->|HTTP/REST| EC2[EC2 Instance\n- Docker\n- API Node.js]
-    
-    subgraph "AWS Cloud - Região us-east-1"
-        EC2 -->|Conexão TCP/5432| RDS[(Amazon RDS\nPostgreSQL 16)]
-        EC2 -.->|Uploads Futuros| S3[Amazon S3\nBucket Storage]
-        
-        subgraph "Segurança"
-            SG_APP[Security Group App\nLiberado: 22, 3000] -.-> EC2
-            SG_RDS[Security Group RDS\nLiberado: 5432] -.-> RDS
-        end
-    end
-    
-    GitHub[GitHub Actions\nCI/CD Pipeline] -->|SSH/Deploy| EC2
-    GitHub -->|Terraform Apply| SG_APP
-```
-
-### Recursos Provisionados
-- **Instância EC2 (t3.medium)**: Servidor de aplicação rodando Docker.
-- **RDS PostgreSQL (db.t3.micro)**: Banco de dados relacional gerenciado.
-- **S3 Bucket**: Armazenamento para uploads e arquivos.
-- **Security Groups**: Controle estrito de tráfego de rede (SSH, API, DB).
-- **SSH Key Pair**: Autenticação segura na máquina virtual.
-
-### Executando o Terraform (Local - Opcional)
-A esteira gerencia a infraestrutura, mas caso precise rodar localmente:
-```bash
-cd infra
-terraform init -backend=false
-terraform plan
-terraform apply
-```
-
-## 21. Notificação de Orçamento por Email (Atualização de Status — Fase 2)
+## 20. Notificação de Orçamento por Email (Atualização de Status — Fase 2)
 
 Requisito da Fase 2: *"Atualização de status da OS via alguma ferramenta como email."*
 
@@ -1041,7 +1023,7 @@ APP_URL=https://sua-api-em-producao.com
 
 Se o serviço de notificação não estiver registrado no módulo (`@Optional()`), a geração do orçamento continua funcionando normalmente — o envio de email nunca bloqueia o fluxo principal de negócio. Se o cliente da OS não tiver email cadastrado, a notificação é apenas registrada como aviso no log, sem lançar exceção.
 
-## 22. Esteira de CI/CD (GitHub Actions)
+## 21. Esteira de CI/CD (GitHub Actions)
 
 A pipeline de Integração, Entrega e Deploy Contínuo foi configurada no arquivo `.github/workflows/ci-cd.yml` e automatiza todo o ciclo de vida do software.
 
@@ -1049,9 +1031,9 @@ A pipeline de Integração, Entrega e Deploy Contínuo foi configurada no arquiv
 
 ```mermaid
 flowchart LR
-    A[Push / PR] --> B(1. CI: Testes & Build)
-    B -->|Sucesso| C(2. CD: Imagem Docker GHCR)
-    C -->|Sucesso (Apenas main)| D(3. Deploy: Terraform + SSH)
+    A["Push / PR"] --> B["1. CI — Testes & Build"]
+    B -->|"Sucesso"| C["2. CD — Imagem Docker GHCR"]
+    C -->|"Sucesso — apenas main"| D["3. Deploy — Terraform + SSH"]
 ```
 
 1. **Integração Contínua (CI)**:
@@ -1072,7 +1054,7 @@ flowchart LR
    - Captura os outputs dinâmicos da AWS (IP da EC2, credenciais RDS).
    - Conecta via SSH na instância EC2, faz o login no GHCR, baixa a nova imagem e reinicia a API com zero intervenção manual.
 
-## 23. Entregáveis da Fase 2
+## 22. Entregáveis da Fase 2
 
 - **Repositório Git**: [FernandoGreco/techChallengePosTech](https://github.com/FernandoGreco/techChallengePosTech)
 - **Manifestos Kubernetes**: `/k8s`
