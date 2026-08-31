@@ -1061,4 +1061,4 @@ flowchart LR
 - **Scripts Terraform**: `/infra`
 - **Pipeline CI/CD**: `.github/workflows/ci-cd.yml`
 - **Documentação de APIs (Swagger)**: `http://localhost:3000/api/docs` (ou coleção exportada em `/test/collection.json`)
-- **Vídeo Demonstrativo da Fase 2**: [Link do Vídeo no YouTube/Vimeo](https://youtube.com) *(substituir pelo link oficial de até 15 min)*
+- **Vídeo Demonstrativo da Fase 2**: [https://youtu.be/PhsfjCkVd_c](https://youtu.be/PhsfjCkVd_c)
