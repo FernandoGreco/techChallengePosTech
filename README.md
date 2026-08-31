@@ -607,19 +607,19 @@ npm run test:e2e
 
 ```
 Test Suites: 39 passed, 39 total
-Tests:       271 passed, 271 total
+Tests:       251 passed, 251 total
 Snapshots:   0 total
-Time:        ~15s
+Time:        ~20s
 ```
 
 ### Cobertura (`npm run test:cov`)
 
 ```
-=============================== Coverage summary ================================
-Statements   : 94.63%  ( 1058/1118 )
-Branches     : 82.47%  (  193/234  )
-Functions    : 95.49%  (  212/222  )
-Lines        : 94.53%  (  934/988  )
+=============================== Coverage summary ===============================
+Statements   : 93.55%  ( 987/1055 )
+Branches     : 80.35%  (  180/224 )
+Functions    : 92.78%  (  193/208 )
+Lines        : 93.12%  (  867/931 )
 =================================================================================
 ```
 
@@ -627,20 +627,24 @@ Lines        : 94.53%  (  934/988  )
 
 | Módulo | Suítes | Testes | Cenários cobertos |
 |---|:---:|:---:|---|
-| `ordens-servico` use cases | 6 | 60+ | Criar OS (status RECEBIDA obrigatório); buscar por ID; consultar status; adicionar serviço/peça (status válido/inválido); iniciar diagnóstico; registrar diagnóstico; gerar orçamento (cálculo serviços + peças); aprovar (reserva de estoque, **estoque insuficiente bloqueia**); recusar (retorna para EM_DIAGNOSTICO); iniciar execução (orçamento APROVADO obrigatório); finalizar (baixa de estoque); entregar; todas as **transições inválidas de status lançam exceção** |
-| `ordens-servico` repository | 2 | 17 | `findOperacionais`: exclui FINALIZADA/ENTREGUE via WHERE Prisma; ordenação por prioridade de status; mais antigas primeiro no mesmo status. `criar`: valida cliente, veículo e pertencimento. `adicionarServico/Peca`: NotFoundException quando não existe. `transicionarStatus`: chama `$transaction`. `atualizarDiagnostico` |
+| `ordens-servico` use cases | 5 | 43 | Criar OS (status RECEBIDA obrigatório); listar operacionais; buscar por ID; consultar status; adicionar serviço/peça (status válido/inválido); iniciar diagnóstico; registrar diagnóstico; gerar orçamento (cálculo serviços + peças, dispara notificação); aprovar (reserva de estoque, **estoque insuficiente bloqueia**); recusar (retorna para EM_DIAGNOSTICO); iniciar execução (orçamento APROVADO obrigatório); finalizar (baixa de estoque); entregar; todas as **transições inválidas de status lançam exceção** |
+| `ordens-servico` repository | 2 | 19 | `findOperacionais`: exclui FINALIZADA/ENTREGUE via WHERE Prisma; ordenação por prioridade de status; mais antigas primeiro no mesmo status. `criar`: valida cliente, veículo e pertencimento. `adicionarServico/Peca`: NotFoundException quando não existe. `transicionarStatus`: chama `$transaction`. `atualizarDiagnostico` |
 | `ordens-servico` mapper | 1 | 9 | `toDomain` com todas as relações (cliente, veículo, serviços, peças, orçamentos, histórico); relações `undefined` retornam arrays vazios; `toStatusConsulta` expõe apenas campos de status |
 | `ordens-servico` controller | 1 | 14 | Cada um dos 14 endpoints delega ao use case correto com os parâmetros exatos |
-| `ordens-servico` domain rules | 1 | 9 | Todas as transições válidas e inválidas da máquina de estados (`StatusOSRules`) |
-| `pecas` use case + repository + rules | 3 | 30+ | Criar, listar, reservar, baixar estoque; disponibilidade insuficiente lança exceção; baixa não gera saldo negativo |
-| `clientes` use case + repository | 2 | 15+ | CRUD; documento duplicado gera conflito; busca por CPF/CNPJ |
-| `veiculos` use case + repository | 2 | 15+ | CRUD; validar pertencimento do veículo ao cliente |
-| `servicos` use case + repository | 2 | 12+ | CRUD de catálogo de serviços |
-| `auth` LoginUseCase | 1 | 3 | Credenciais válidas retornam JWT; e-mail não encontrado rejeita; senha errada rejeita |
-| `auth` JwtStrategy + Guard | 2 | 5 | Validação de payload JWT; `@Public()` bypassa o guard; token inválido é rejeitado |
+| `ordens-servico` domain rules | 1 | 18 | Todas as transições válidas e inválidas da máquina de estados (`StatusOSRules`) |
+| `ordens-servico` DTOs | 1 | 7 | Validação de payload de criação de OS, adicionar serviço/peça e registrar diagnóstico |
+| `ordens-servico` notificação por email | 1 | 11 | Envio com dados corretos; auto-provisionamento de conta Ethereal; remetente com/sem nome formatado; cliente sem email não bloqueia o fluxo |
+| `pecas` use case + repository + rules + controller | 4 | 31 | Criar, listar, reservar, baixar estoque; disponibilidade insuficiente lança exceção; baixa não gera saldo negativo |
+| `clientes` use case + repository + controller | 3 | 17 | CRUD; documento duplicado gera conflito; busca por CPF/CNPJ |
+| `veiculos` use case + repository + controller | 3 | 21 | CRUD; validar pertencimento do veículo ao cliente |
+| `servicos` use case + repository + controller | 3 | 16 | CRUD de catálogo de serviços |
+| `auth` LoginUseCase + módulo | 2 | 7 | Credenciais válidas retornam JWT; e-mail não encontrado rejeita; senha errada rejeita; wiring do módulo |
+| `auth` JwtStrategy + Guard + Controller | 3 | 4 | Validação de payload JWT; `@Public()` bypassa o guard; token inválido é rejeitado |
 | `auth` UsuarioPrismaRepository | 1 | 3 | `findByEmail` encontrado/não encontrado; `select` busca apenas campos necessários (sem expor dados extras) |
-| `shared` validators | 3 | 20+ | CPF válido/inválido (algoritmo completo); CNPJ válido/inválido; placa formato antigo e Mercosul |
+| `relatorios` controller | 1 | 2 | Retorno do relatório de tempo médio de serviços |
+| `shared` validators | 5 | 26 | CPF válido/inválido (algoritmo completo); CNPJ válido/inválido; documento genérico; placa formato antigo e Mercosul |
 | `shared` PrismaService | 1 | 2 | Inicialização; desconexão em shutdown |
+| smoke test | 1 | 1 | Todos os módulos da aplicação carregam sem erro de DI |
 
 ### Estratégia de testes
 
