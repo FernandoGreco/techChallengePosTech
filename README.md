@@ -1060,5 +1060,5 @@ flowchart LR
 - **Manifestos Kubernetes**: `/k8s`
 - **Scripts Terraform**: `/infra`
 - **Pipeline CI/CD**: `.github/workflows/ci-cd.yml`
-- **Collection completa das APIs (Swagger)**: `http://localhost:3000/api/docs` (execução local) — especificação OpenAPI em JSON disponível em `http://localhost:3000/api-json`, importável em Postman/Insomnia via *Import → Link*
+- **Documentação de APIs (Swagger)**: `http://localhost:3000/api/docs` (execução local)
 - **Vídeo Demonstrativo da Fase 2**: [https://youtu.be/PhsfjCkVd_c](https://youtu.be/PhsfjCkVd_c)
